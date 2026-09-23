@@ -102,7 +102,12 @@ export default defineConfig({
         timeout: 300000,
       },
     ],
-    forceExit: false,
+    /*
+     * Le provider Vite démarre son serveur de dev même en test et garde la
+     * boucle d'événements ouverte : sans ça, « node ace test » ne rend pas la
+     * main une fois les tests passés.
+     */
+    forceExit: true,
   },
 
   /*
