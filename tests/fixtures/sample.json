@@ -1,0 +1,431 @@
+{
+ "ROC": [
+  {
+   "id": "86c1aaaa1",
+   "custom_id": "ROC-1801",
+   "name": "Correction export CDS en double",
+   "status": {
+    "status": "dev en cours",
+    "type": "custom",
+    "color": "#5f55ee"
+   },
+   "url": "https://app.clickup.com/t/86c1aaaa1",
+   "priority": {
+    "id": "2",
+    "priority": "high",
+    "color": "#ffcc00"
+   },
+   "assignees": [
+    {
+     "id": 106607105,
+     "username": "POTENTIER Sam",
+     "email": "s.potentier@cicd.biz"
+    }
+   ],
+   "tags": [
+    {
+     "name": "bug"
+    }
+   ],
+   "due_date": "1790726400000",
+   "date_updated": "1789986000000",
+   "date_created": "1757000000000",
+   "time_estimate": 7200000,
+   "list": {
+    "id": "901514487732",
+    "name": "Sprint 59 (9/15 - 10/5)"
+   },
+   "folder": {
+    "id": "90154017235",
+    "name": "ROC Sprints"
+   },
+   "space": {
+    "id": "90152348891"
+   },
+   "parent": null,
+   "text_content": "Lors de l'export CDS depuis la synthèse, les lignes de la station 1447 apparaissent deux fois quand la grille a été dégrappée. Reproduit en recette avec le compte formateur.",
+   "custom_fields": [
+    {
+     "id": "e7204ff8",
+     "name": "ROC Application",
+     "type": "drop_down",
+     "type_config": {
+      "options": [
+       {
+        "id": "52539081",
+        "name": "CODO",
+        "orderindex": 0
+       },
+       {
+        "id": "5e014cec",
+        "name": "DODO",
+        "orderindex": 1
+       }
+      ]
+     },
+     "value": 0
+    },
+    {
+     "id": "543b1761",
+     "name": "Section CODO",
+     "type": "labels",
+     "type_config": {
+      "options": [
+       {
+        "id": "69e20958",
+        "label": "Dégrappage"
+       },
+       {
+        "id": "3f06d0fc",
+        "label": "Synthése"
+       }
+      ]
+     },
+     "value": [
+      "69e20958",
+      "3f06d0fc"
+     ]
+    },
+    {
+     "id": "04ad335f",
+     "name": "BASELINE_status",
+     "type": "multi_key",
+     "value": {
+      "x": 1
+     }
+    }
+   ],
+   "custom_item_id": 1002,
+   "time_spent": 12600000
+  },
+  {
+   "id": "86c1aaaa2",
+   "custom_id": "ROC-1802",
+   "name": "Ajout HVO 100 dans la navette 1447",
+   "status": {
+    "status": "revue de code a faire",
+    "type": "custom"
+   },
+   "url": "https://app.clickup.com/t/86c1aaaa2",
+   "priority": null,
+   "assignees": [
+    {
+     "id": 88650359,
+     "username": "Quentin Carré"
+    }
+   ],
+   "tags": [],
+   "due_date": null,
+   "date_updated": "1788836000000",
+   "date_created": "1756000000000",
+   "list": {
+    "id": "901514487732",
+    "name": "Sprint 59 (9/15 - 10/5)"
+   },
+   "folder": {
+    "id": "90154017235",
+    "name": "ROC Sprints"
+   },
+   "space": {
+    "id": "90152348891"
+   },
+   "parent": null,
+   "text_content": "MR !412 prête. Ajouter le produit HVO 100 dans le fichier navette et dans la fiche liaison.",
+   "custom_fields": [
+    {
+     "id": "e7204ff8",
+     "name": "ROC Application",
+     "type": "drop_down",
+     "type_config": {
+      "options": [
+       {
+        "id": "52539081",
+        "name": "CODO",
+        "orderindex": 0
+       }
+      ]
+     },
+     "value": 0
+    }
+   ],
+   "custom_item_id": 1001,
+   "time_spent": 3600000
+  },
+  {
+   "id": "86c1aaaa3",
+   "custom_id": "ROC-1790",
+   "name": "Notification proro F/CDS",
+   "status": {
+    "status": "deployé sur recette",
+    "type": "done"
+   },
+   "url": "https://app.clickup.com/t/86c1aaaa3",
+   "priority": {
+    "id": "3",
+    "priority": "normal"
+   },
+   "assignees": [
+    {
+     "id": 106607105,
+     "username": "POTENTIER Sam"
+    }
+   ],
+   "tags": [],
+   "due_date": "1789036000000",
+   "date_updated": "1789836000000",
+   "date_created": "1755000000000",
+   "list": {
+    "id": "901514487732",
+    "name": "Sprint 59 (9/15 - 10/5)"
+   },
+   "folder": {
+    "id": "90154017235",
+    "name": "ROC Sprints"
+   },
+   "space": {
+    "id": "90152348891"
+   },
+   "parent": null,
+   "text_content": "",
+   "custom_fields": [],
+   "custom_item_id": 0
+  },
+  {
+   "id": "86c1aaaa4",
+   "custom_id": "ROC-1650",
+   "name": "Tâche en production (hors périmètre)",
+   "status": {
+    "status": "production",
+    "type": "done"
+   },
+   "url": "https://app.clickup.com/t/86c1aaaa4",
+   "priority": null,
+   "assignees": [],
+   "tags": [],
+   "due_date": null,
+   "date_updated": "1758300000000",
+   "list": {
+    "id": "x",
+    "name": "Sprint 58"
+   },
+   "space": {
+    "id": "90152348891"
+   },
+   "custom_fields": [],
+   "custom_item_id": 0
+  }
+ ],
+ "ROCND": [
+  {
+   "id": "86c2bbbb1",
+   "custom_id": "ROCND-701",
+   "name": "Calcul du segment cible — écran de synthèse",
+   "status": {
+    "status": "a faire",
+    "type": "custom"
+   },
+   "url": "https://app.clickup.com/t/86c2bbbb1",
+   "priority": {
+    "id": "1",
+    "priority": "urgent"
+   },
+   "assignees": [],
+   "tags": [
+    {
+     "name": "US"
+    }
+   ],
+   "due_date": null,
+   "date_updated": "1790000000000",
+   "date_created": "1758000000000",
+   "list": {
+    "id": "901521847407",
+    "name": "ROC ND Evol"
+   },
+   "folder": {
+    "id": "901514913369",
+    "name": "ROC ND Backlog"
+   },
+   "space": {
+    "id": "901510389524"
+   },
+   "parent": "86c2bbbb0",
+   "text_content": "En tant que PO je veux voir le segment cible calculé à partir des moyennes.",
+   "custom_fields": [
+    {
+     "id": "5221f6ee",
+     "name": "Projet Macro",
+     "type": "drop_down",
+     "type_config": {
+      "options": [
+       {
+        "id": "97deb1b0",
+        "name": "New Deal",
+        "orderindex": 10
+       }
+      ]
+     },
+     "value": 10
+    }
+   ],
+   "custom_item_id": 1001
+  },
+  {
+   "id": "86c2bbbb2",
+   "custom_id": "ROCND-702",
+   "name": "Segment réel vs segment cible",
+   "status": {
+    "status": "a faire",
+    "type": "open"
+   },
+   "url": "https://app.clickup.com/t/86c2bbbb2",
+   "priority": null,
+   "assignees": [],
+   "tags": [],
+   "due_date": null,
+   "date_updated": "1782000000000",
+   "date_created": "1750000000000",
+   "list": {
+    "id": "901521846576",
+    "name": "ROC ND bug maintenance"
+   },
+   "folder": {
+    "id": "901514913369",
+    "name": "ROC ND Backlog"
+   },
+   "space": {
+    "id": "901510389524"
+   },
+   "parent": null,
+   "text_content": "",
+   "custom_fields": [],
+   "custom_item_id": 0
+  },
+  {
+   "id": "86c2bbbb3",
+   "custom_id": "ROCND-703",
+   "name": "Refonte du calcul des remises (non priorisée)",
+   "status": {
+    "status": "nouveau",
+    "type": "open"
+   },
+   "url": "https://app.clickup.com/t/86c2bbbb3",
+   "priority": null,
+   "assignees": [],
+   "tags": [],
+   "due_date": null,
+   "date_updated": "1782000000000",
+   "date_created": "1750000000000",
+   "list": {
+    "id": "901521847407",
+    "name": "ROC ND Evol"
+   },
+   "folder": {
+    "id": "901514913369",
+    "name": "ROC ND Backlog"
+   },
+   "space": {
+    "id": "901510389524"
+   },
+   "parent": null,
+   "text_content": "",
+   "custom_fields": [],
+   "custom_item_id": 0
+  }
+ ],
+ "TEMPO": [
+  {
+   "id": "86ca4b1me",
+   "custom_id": "TEMP0-620",
+   "name": "CF < iNV < Fonction reset prix KO",
+   "status": {
+    "status": "dev en cours",
+    "type": "custom"
+   },
+   "url": "https://app.clickup.com/t/86ca4b1me",
+   "priority": null,
+   "assignees": [
+    {
+     "id": 88650359,
+     "username": "Quentin Carré"
+    },
+    {
+     "id": 106607105,
+     "username": "POTENTIER Sam"
+    }
+   ],
+   "tags": [],
+   "due_date": null,
+   "date_updated": "1788527183522",
+   "date_created": "1780000000000",
+   "list": {
+    "id": "901507424823",
+    "name": "Tempo CICD Only"
+   },
+   "folder": {
+    "id": "90154576502",
+    "name": "Tempo Backlog"
+   },
+   "space": {
+    "id": "90152862404"
+   },
+   "parent": null,
+   "text_content": "Le bouton reset prix ne remet pas les prix à zéro sur l'inventaire du contrôle financier.",
+   "custom_fields": [
+    {
+     "id": "a9ddc3c9",
+     "name": "CICD ONLY",
+     "type": "text",
+     "value": "oui"
+    }
+   ],
+   "custom_item_id": 0,
+   "time_spent": 7200000
+  },
+  {
+   "id": "86cakwqu9",
+   "custom_id": "TEMP0-661",
+   "name": "US048 / Gestion de la réception des jaugeages par D365",
+   "status": {
+    "status": "revue de code ok",
+    "type": "custom"
+   },
+   "url": "https://app.clickup.com/t/86cakwqu9",
+   "priority": {
+    "id": "2",
+    "priority": "high"
+   },
+   "assignees": [
+    {
+     "id": 88525641,
+     "username": "Maxime Leclerc"
+    }
+   ],
+   "tags": [],
+   "due_date": "1790597700000",
+   "date_updated": "1790087836836",
+   "date_created": "1780000000000",
+   "list": {
+    "id": "901507556891",
+    "name": "Tempo Product Backlog"
+   },
+   "folder": {
+    "id": "90154576502",
+    "name": "Tempo Backlog"
+   },
+   "space": {
+    "id": "90152862404"
+   },
+   "parent": null,
+   "text_content": "Réception des jaugeages depuis D365 via le bus Azure.",
+   "custom_fields": [],
+   "custom_item_id": 1001
+  }
+ ],
+ "_custom_items": {
+  "1001": "User Story",
+  "1002": "Bug",
+  "1004": "EPIC",
+  "1005": "Support"
+ }
+}
