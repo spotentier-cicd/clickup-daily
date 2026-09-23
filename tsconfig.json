@@ -3,6 +3,9 @@
   "compilerOptions": {
     "rootDir": "./",
     "jsx": "react",
+    "paths": {
+      "@/*": ["./inertia/*"]
+    },
     "outDir": "./build"
   },
   "references": [{ "path": "./tsconfig.inertia.json" }]
