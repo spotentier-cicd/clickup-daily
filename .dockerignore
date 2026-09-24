@@ -1,0 +1,21 @@
+# Ce qui se reconstruit dans l'image
+node_modules
+build
+public/assets
+
+# Ce qui ne doit jamais y entrer
+.env
+.env.local
+.env.*.local
+tmp
+
+# Ce qui ne sert pas à l'exécution
+#
+# .adonisjs n'est PAS exclu : le front importe ses types générés
+# (@generated/data), et la compilation Vite échoue sans eux.
+.git
+.github
+scripts
+README.md
+*.log
+.DS_Store

@@ -1,0 +1,62 @@
+# clickup-daily en conteneurs.
+#
+#   cp .env.example .env     puis y coller CLICKUP_API_TOKEN et APP_KEY
+#   docker compose up -d --build
+#   → http://localhost:3333, puis /parametres pour choisir ce qu'on suit
+#
+# Deux services partagent la même base : `app` sert le tableau de bord,
+# `collector` lance la collecte du matin. Les valeurs de .env fournissent les
+# secrets ; ce qui doit différer en conteneur est surchargé ici.
+
+name: clickup-daily
+
+x-common: &common
+  build: .
+  image: clickup-daily:latest
+  env_file:
+    - .env
+  environment:
+    NODE_ENV: production
+    HOST: 0.0.0.0
+    PORT: 3333
+    APP_URL: ${APP_URL:-http://localhost:3333}
+    TZ: ${TZ:-Europe/Paris}
+    DB_FILENAME: db.sqlite3
+  volumes:
+    # La base et le cache de veille. Le seul chemin à persister.
+    - data:/app/tmp
+    # Dépôts git locaux, si vous voulez rapprocher les branches des tickets :
+    # décommentez, et renseignez git.repos dans config/clickup_daily.ts avec
+    # les chemins VUS DU CONTENEUR (/repos/…).
+    # - ${REPOS_DIR:-./repos}:/repos:ro
+  restart: unless-stopped
+
+services:
+  app:
+    <<: *common
+    ports:
+      - '${PORT:-3333}:3333'
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3333/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  collector:
+    <<: *common
+    # Attend que `app` ait appliqué les migrations : elles sont idempotentes,
+    # mais deux processus qui les jouent en même temps se marcheraient dessus.
+    depends_on:
+      app:
+        condition: service_healthy
+    command: ['collect.sh']
+    environment:
+      NODE_ENV: production
+      TZ: ${TZ:-Europe/Paris}
+      DB_FILENAME: db.sqlite3
+      COLLECT_AT: ${COLLECT_AT:-08:00}
+      COLLECT_DAYS: ${COLLECT_DAYS:-1,2,3,4,5}
+
+volumes:
+  data:

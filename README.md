@@ -69,9 +69,71 @@ npm run test                     # 134 tests unitaires, base isolée
 npm run lint && npm run typecheck
 ```
 
-`--trigger scheduled` déplace la référence du « ce qui a changé » : c'est le
-mode à utiliser depuis un lanceur automatique (launchd, cron), pour que la
-comparaison se fasse d'un matin à l'autre et non d'un clic à l'autre.
+## En conteneur
+
+```bash
+cp .env.example .env
+# APP_KEY : openssl rand -base64 32
+# CLICKUP_API_TOKEN : votre jeton pk_…
+docker compose up -d --build
+```
+
+Le tableau attend sur http://localhost:3333 ; ouvrez **/parametres** pour
+choisir ce que vous suivez, comme en local.
+
+Deux services :
+
+| | |
+|---|---|
+| `app` | sert le tableau de bord, applique les migrations au démarrage |
+| `collector` | lance `daily:report --trigger scheduled` chaque jour ouvré |
+
+L'heure et les jours de collecte se règlent dans `.env` :
+`COLLECT_AT=08:00`, `COLLECT_DAYS=1,2,3,4,5` (1 = lundi), `TZ=Europe/Paris`.
+
+```bash
+docker compose logs -f collector             # suivre les collectes
+docker compose exec app node ace daily:report  # collecter tout de suite
+docker compose down                          # arrêter, en gardant les données
+docker compose down -v                       # tout effacer, base comprise
+```
+
+La base SQLite et le cache de veille vivent dans le volume `data`, monté sur
+`/app/tmp` : c'est le seul chemin à sauvegarder.
+
+**Les branches git** ne sont pas visibles depuis un conteneur. Pour les
+rapprocher des tickets, décommentez le montage `/repos` dans
+`docker-compose.yml`, réglez `REPOS_DIR` dans `.env`, et renseignez
+`git.repos` avec les chemins **vus du conteneur** (`/repos/mon-projet`). Sans
+ça la section disparaît simplement des cartes.
+
+**La notification macOS** ne fonctionne pas en conteneur : `osascript` n'y
+existe pas. L'échec est avalé, la collecte n'en souffre pas.
+
+## La collecte du matin, sans conteneur
+
+```bash
+./scripts/install-launchd.sh          # jours ouvrés à 8 h 00
+./scripts/install-launchd.sh 7 30     # à 7 h 30
+./scripts/install-launchd.sh --remove
+```
+
+Le script installe un agent launchd qui lance `daily:report --trigger
+scheduled`. Le journal va dans `tmp/daily-report.log`.
+
+Le déclencheur compte : `scheduled` est le seul qui déplace la **référence** de
+« ce qui a changé ». Un clic sur « Rafraîchir » dans la journée compare donc
+toujours au rapport du matin, pas au clic précédent.
+
+Sans planificateur, la référence retombe sur le dernier rapport d'avant
+aujourd'hui : « ce qui a changé » fonctionne quand même, simplement calé sur
+votre dernière collecte plutôt que sur une heure fixe.
+
+Sur un système sans launchd, une ligne de `crontab` fait la même chose :
+
+```
+0 8 * * 1-5 cd /chemin/vers/clickup-daily && /usr/bin/env node ace.js daily:report --trigger scheduled
+```
 
 ## Ce qui reste en configuration
 
