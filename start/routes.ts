@@ -13,3 +13,6 @@ import { controllers } from '#generated/controllers'
 
 router.get('/', [controllers.Dashboard, 'index']).as('dashboard')
 router.get('/r/:day', [controllers.Dashboard, 'show']).as('dashboard.archive')
+
+/* Relance une collecte. Inertia pose le jeton XSRF, Shield le vérifie. */
+router.post('/refresh', [controllers.Refresh, 'store']).as('refresh')

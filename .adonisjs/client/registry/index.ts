@@ -18,6 +18,12 @@ const routes = {
     tokens: [{"old":"/r/:day","type":0,"val":"r","end":""},{"old":"/r/:day","type":1,"val":"day","end":""}],
     types: placeholder as Registry['dashboard.archive']['types'],
   },
+  'refresh': {
+    methods: ["POST"],
+    pattern: '/refresh',
+    tokens: [{"old":"/refresh","type":0,"val":"refresh","end":""}],
+    types: placeholder as Registry['refresh']['types'],
+  },
 } as const satisfies Record<string, AdonisEndpoint>
 
 export { routes }

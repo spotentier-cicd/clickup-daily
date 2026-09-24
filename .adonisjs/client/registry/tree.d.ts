@@ -5,4 +5,5 @@ export interface ApiDefinition {
   dashboard: typeof routes['dashboard'] & {
     archive: typeof routes['dashboard.archive']
   }
+  refresh: typeof routes['refresh']
 }

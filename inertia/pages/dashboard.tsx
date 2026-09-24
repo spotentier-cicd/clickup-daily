@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { router } from '@inertiajs/react'
 import { Moon, RefreshCw, Sun, SunMoon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,6 +9,7 @@ import { BlockersSection } from '@/components/blockers_section'
 import { PointageSection } from '@/components/pointage_section'
 import { ChangesSection } from '@/components/changes_section'
 import { MentionsSection } from '@/components/mentions_section'
+import { cn } from 'cn'
 import { matchesSearch } from '@/lib/filters'
 import { applyTheme, readTheme, type Theme } from '@/lib/theme'
 import { formatDateTime, formatLongDate, pluralize } from '@/lib/format'
@@ -29,6 +31,15 @@ export default function Dashboard({ report, days, day }: DashboardProps) {
   /* Pas de SSR ici : le premier rendu a lieu dans le navigateur, donc on peut
      lire la préférence mémorisée dès l'initialisation de l'état. */
   const [theme, setTheme] = useState<Theme>(readTheme)
+  const [refreshing, setRefreshing] = useState(false)
+
+  /* La collecte prend quelques secondes : le bouton dit ce qui se passe. */
+  const refresh = () =>
+    router.post(
+      '/refresh',
+      {},
+      { onStart: () => setRefreshing(true), onFinish: () => setRefreshing(false) }
+    )
 
   useEffect(() => applyTheme(theme), [theme])
 
@@ -66,9 +77,9 @@ export default function Dashboard({ report, days, day }: DashboardProps) {
               <ThemeIcon className="size-4" />
               <span className="sr-only">Changer de thème</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => globalThis.location.reload()}>
-              <RefreshCw className="size-4" />
-              Recharger
+            <Button variant="outline" size="sm" disabled={refreshing} onClick={refresh}>
+              <RefreshCw className={cn('size-4', refreshing && 'animate-spin')} />
+              {refreshing ? 'Collecte…' : 'Rafraîchir'}
             </Button>
           </div>
         </div>

@@ -5,4 +5,5 @@
 
 export const controllers = {
   Dashboard: () => import('#controllers/dashboard_controller'),
+  Refresh: () => import('#controllers/refresh_controller'),
 }
