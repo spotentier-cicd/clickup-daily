@@ -3,3 +3,111 @@
  * DO NOT EDIT manually
  * Run "node ace migration:run" command to re-generate this file
  */
+
+import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { DateTime } from 'luxon'
+
+export class RunSchema extends BaseModel {
+  static $columns = [
+    'apiCalls',
+    'backlogExcluded',
+    'blockers',
+    'bugTasks',
+    'createdAt',
+    'day',
+    'durationMs',
+    'id',
+    'myTasks',
+    'payload',
+    'ranAt',
+    'totalTasks',
+    'trigger',
+    'updatedAt',
+    'weekMs',
+  ] as const
+  $columns = RunSchema.$columns
+  @column()
+  declare apiCalls: number
+  @column()
+  declare backlogExcluded: number
+  @column()
+  declare blockers: number
+  @column()
+  declare bugTasks: number
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime | null
+  @column()
+  declare day: string
+  @column()
+  declare durationMs: number
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare myTasks: number
+  @column()
+  declare payload: string
+  @column.dateTime()
+  declare ranAt: DateTime
+  @column()
+  declare totalTasks: number
+  @column()
+  declare trigger: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare weekMs: number
+}
+
+export class TaskSnapshotSchema extends BaseModel {
+  static $columns = [
+    'assigneeIds',
+    'columnKey',
+    'createdAt',
+    'envKey',
+    'id',
+    'isBug',
+    'isMine',
+    'myTimeMs',
+    'name',
+    'ref',
+    'runId',
+    'status',
+    'taskId',
+    'timeEstimateMs',
+    'timeSpentMs',
+    'url',
+  ] as const
+  $columns = TaskSnapshotSchema.$columns
+  @column()
+  declare assigneeIds: string
+  @column()
+  declare columnKey: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime | null
+  @column()
+  declare envKey: string
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare isBug: boolean
+  @column()
+  declare isMine: boolean
+  @column()
+  declare myTimeMs: number
+  @column()
+  declare name: string
+  @column()
+  declare ref: string
+  @column()
+  declare runId: number
+  @column()
+  declare status: string
+  @column()
+  declare taskId: string
+  @column()
+  declare timeEstimateMs: number
+  @column()
+  declare timeSpentMs: number
+  @column()
+  declare url: string
+}
