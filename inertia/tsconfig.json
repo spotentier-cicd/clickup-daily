@@ -6,12 +6,14 @@
     "paths": {
       "~/*": ["./*"],
       "@/*": ["./*"],
+      "#domain/*": ["../app/domain/*"],
       "@generated/*": ["../.adonisjs/client/*"]
     }
   },
   "include": [
     "./**/*.ts",
     "./**/*.tsx",
+    "../app/domain/**/*.ts",
     "../.adonisjs/client/**/*.ts",
     "../.adonisjs/server/**/*.ts"
   ]

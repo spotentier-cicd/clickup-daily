@@ -6,11 +6,17 @@ import type { ApiDefinition } from './tree.d.ts'
 const placeholder: any = {}
 
 const routes = {
-  'home': {
+  'dashboard': {
     methods: ["GET","HEAD"],
     pattern: '/',
     tokens: [{"old":"/","type":0,"val":"/","end":""}],
-    types: placeholder as Registry['home']['types'],
+    types: placeholder as Registry['dashboard']['types'],
+  },
+  'dashboard.archive': {
+    methods: ["GET","HEAD"],
+    pattern: '/r/:day',
+    tokens: [{"old":"/r/:day","type":0,"val":"r","end":""},{"old":"/r/:day","type":1,"val":"day","end":""}],
+    types: placeholder as Registry['dashboard.archive']['types'],
   },
 } as const satisfies Record<string, AdonisEndpoint>
 

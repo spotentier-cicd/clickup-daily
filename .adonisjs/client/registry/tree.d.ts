@@ -2,5 +2,7 @@
 import type { routes } from './index.ts'
 
 export interface ApiDefinition {
-  home: typeof routes['home']
+  dashboard: typeof routes['dashboard'] & {
+    archive: typeof routes['dashboard.archive']
+  }
 }

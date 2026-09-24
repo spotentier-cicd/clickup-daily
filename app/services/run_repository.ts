@@ -113,7 +113,7 @@ export class RunRepository {
   }
 
   /** Les journées disponibles, de la plus récente à la plus ancienne. */
-  async availableDays(limit = 60): Promise<{ day: string; ranAt: DateTime }[]> {
+  async availableDays(limit = 60): Promise<{ day: string; ranAt: string }[]> {
     const runs = await Run.query()
       .select('day')
       .max('ran_at as ran_at')
@@ -121,7 +121,7 @@ export class RunRepository {
       .orderBy('day', 'desc')
       .limit(limit)
 
-    return runs.map((run) => ({ day: run.day, ranAt: run.ranAt }))
+    return runs.map((run) => ({ day: run.day, ranAt: run.ranAt.toISO()! }))
   }
 
   /** Supprime les runs plus vieux que la rétention ; les instantanés suivent. */
