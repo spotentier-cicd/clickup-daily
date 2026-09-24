@@ -3,7 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title data-inertia>clickup-daily</title>
+    <title data-inertia>Point ClickUp</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    {{-- Le navigateur peint son cadre avant la feuille de style : sans ça, un
+         thème sombre s'ouvre sur un éclair blanc. --}}
+    <meta name="color-scheme" content="dark light" />
 
     @viteReactRefresh()
     @vite(['inertia/app.tsx'])
@@ -11,7 +16,7 @@
     @stack('dumper')
   </head>
 
-  <body class="bg-background text-foreground">
+  <body>
     @inertia()
   </body>
 

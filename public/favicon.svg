@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Point ClickUp">
+  <!--
+    Trois colonnes de hauteurs inégales : le tableau, réduit à ce qu'on y lit
+    d'un coup d'œil. Dessiné pour tenir à 16 px — trois formes, deux niveaux de
+    contraste, rien d'autre. Le violet est l'accent Nocturne de l'application.
+  -->
+  <rect width="32" height="32" rx="7" fill="#9184d9"/>
+  <rect x="7"  y="14" width="4" height="11" rx="2" fill="#f5f4ff" opacity=".62"/>
+  <rect x="14" y="7"  width="4" height="18" rx="2" fill="#f5f4ff"/>
+  <rect x="21" y="18" width="4" height="7"  rx="2" fill="#f5f4ff" opacity=".62"/>
+</svg>
