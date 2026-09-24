@@ -18,9 +18,11 @@ interface WeekCardProps {
   pointage: Pointage
   /** Mes tâches visibles, pour la liste des estimations dépassées. */
   mine: Task[]
+  /** Ouvrir la fiche d'un ticket dans l'application. */
+  onOpenTask: (id: string) => void
 }
 
-export function WeekCard({ pointage, mine }: WeekCardProps) {
+export function WeekCard({ pointage, mine, onOpenTask }: WeekCardProps) {
   const late = pointage.gapMs > 0
   const filled = pointage.weekTargetMs
     ? Math.min(100, (pointage.weekMs / pointage.weekTargetMs) * 100)
@@ -185,13 +187,12 @@ export function WeekCard({ pointage, mine }: WeekCardProps) {
             {pluralize(over.length, 'estimation dépassée', 'estimations dépassées')}
           </div>
           {over.map((task) => (
-            <a
+            <button
               key={task.id}
-              href={task.url}
-              target="_blank"
-              rel="noreferrer"
-              className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-baseline gap-2"
-              style={{ font: '400 13px/1.35 var(--font-body)' }}
+              type="button"
+              onClick={() => onOpenTask(task.id)}
+              className="hoverable-ink grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto_auto] items-baseline gap-2 border-0 bg-transparent p-0 text-left"
+              style={{ font: '400 13px/1.35 var(--font-body)', color: 'inherit' }}
             >
               <span className="num" style={{ font: '500 11.5px var(--mono)', color: 'var(--ref)' }}>
                 {task.ref}
@@ -209,7 +210,7 @@ export function WeekCard({ pointage, mine }: WeekCardProps) {
               >
                 +{Math.round((task.timeSpentMs / task.timeEstimateMs - 1) * 100)}%
               </span>
-            </a>
+            </button>
           ))}
         </div>
       )}

@@ -76,18 +76,28 @@ export class RunRepository {
   }
 
   /**
-   * La référence de comparaison : le dernier run planifié.
+   * La référence de comparaison de « ce qui a changé ».
    *
-   * Un rafraîchissement manuel ne la déplace pas — « ce qui a changé » continue
-   * de se comparer au rapport du matin, pas au clic précédent.
+   * D'abord le dernier run PLANIFIÉ : c'est la bonne référence, parce qu'un
+   * rafraîchissement manuel ne doit pas la déplacer — on compare au rapport du
+   * matin, pas au clic précédent.
+   *
+   * À défaut, le dernier run d'AVANT AUJOURD'HUI, quel que soit son
+   * déclencheur. Sans ce repli, une installation sans planificateur ne produit
+   * jamais de référence : `diff.since` reste nul, et l'écran affiche « rien
+   * n'a changé » là où il devrait dire « rien à quoi comparer ». C'est le même
+   * silence que le reste du projet s'interdit.
+   *
+   * La comparaison porte sur `day`, une date ISO stockée en texte : l'ordre
+   * lexicographique y est l'ordre chronologique, sans question de fuseau.
    */
-  async diffReference(
-    before?: DateTime
-  ): Promise<{ at: DateTime; tasks: TaskSnapshotData[] } | null> {
-    const query = Run.query().where('trigger', 'scheduled').orderBy('ran_at', 'desc')
-    if (before) query.where('ran_at', '<', before.toSQL()!)
+  async diffReference(now: DateTime): Promise<{ at: DateTime; tasks: TaskSnapshotData[] } | null> {
+    const today = now.toISODate()!
 
-    const run = await query.first()
+    const run =
+      (await Run.query().where('trigger', 'scheduled').orderBy('ran_at', 'desc').first()) ??
+      (await Run.query().where('day', '<', today).orderBy('ran_at', 'desc').first())
+
     if (!run) return null
 
     const snapshots = await TaskSnapshot.query().where('run_id', run.id)

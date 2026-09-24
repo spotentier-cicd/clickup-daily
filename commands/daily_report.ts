@@ -84,7 +84,7 @@ export default class DailyReport extends BaseCommand {
     }
 
     try {
-      const previous = await runs.diffReference()
+      const previous = await runs.diffReference(now)
       const report = await builder.build({
         config,
         client,

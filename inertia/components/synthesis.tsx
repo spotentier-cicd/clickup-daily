@@ -51,6 +51,8 @@ interface SynthesisProps {
   onTab: (key: string) => void
   /** Rouvrir tout le périmètre, quand un blocage s'y trouve masqué. */
   onResetScope: () => void
+  /** Ouvrir la fiche d'un ticket DANS l'application, pas dans un onglet. */
+  onOpenTask: (id: string) => void
 }
 
 export function Synthesis({
@@ -61,6 +63,7 @@ export function Synthesis({
   envColors,
   onTab,
   onResetScope,
+  onOpenTask,
 }: SynthesisProps) {
   const mine = visible.filter((task) => task.isMine)
   const reviews = visible.filter((task) => task.column === REVIEW_COLUMN && !task.isMine)
@@ -160,11 +163,17 @@ export function Synthesis({
       </div>
 
       <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,380px),1fr))] items-start gap-[14px]">
-        <UnblockCard scoped={scoped} onReset={onResetScope} />
-        {report.pointage && <WeekCard pointage={report.pointage} mine={mine} />}
-        <FocusCard columns={report.columns} mine={mine} reviews={reviews} />
+        <UnblockCard scoped={scoped} onReset={onResetScope} onOpenTask={onOpenTask} />
+        {report.pointage && (
+          <WeekCard pointage={report.pointage} mine={mine} onOpenTask={onOpenTask} />
+        )}
+        <FocusCard columns={report.columns} mine={mine} reviews={reviews} onOpenTask={onOpenTask} />
         <ChangesCard report={report} scoped={scoped} />
-        <MentionsCard scoped={scoped} lookback={report.thresholds.mentionsLookbackDays} />
+        <MentionsCard
+          scoped={scoped}
+          lookback={report.thresholds.mentionsLookbackDays}
+          onOpenTask={onOpenTask}
+        />
       </div>
 
       {/* Les espaces et leur couleur, une fois, pour que les pastilles se lisent. */}
@@ -199,7 +208,15 @@ export function Synthesis({
  * Un blocage masqué par le périmètre ne disparaît jamais en silence : il se
  * compte au pied de la carte, avec de quoi le retrouver.
  */
-function UnblockCard({ scoped, onReset }: { scoped: FilteredReport; onReset: () => void }) {
+function UnblockCard({
+  scoped,
+  onReset,
+  onOpenTask,
+}: {
+  scoped: FilteredReport
+  onReset: () => void
+  onOpenTask: (id: string) => void
+}) {
   const entries = scoped.blockers.slice(0, 12)
 
   return (
@@ -238,20 +255,24 @@ function UnblockCard({ scoped, onReset }: { scoped: FilteredReport; onReset: () 
                   {index + 1}
                 </span>
                 <div className="flex flex-col gap-[5px]">
-                  <div style={{ font: '500 14px/1.4 var(--font-body)', textWrap: 'pretty' }}>
-                    <a
-                      href={blocker.task.url}
-                      target="_blank"
-                      rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => onOpenTask(blocker.task.id)}
+                    className="hoverable-ink cursor-pointer border-0 bg-transparent p-0 text-left"
+                    style={{
+                      font: '500 14px/1.4 var(--font-body)',
+                      color: 'inherit',
+                      textWrap: 'pretty',
+                    }}
+                  >
+                    <span
                       className="mr-[7px]"
                       style={{ font: '500 12px var(--mono)', color: 'var(--ref)' }}
                     >
                       {blocker.task.ref}
-                    </a>
-                    <a href={blocker.task.url} target="_blank" rel="noreferrer">
-                      {blocker.task.name}
-                    </a>
-                  </div>
+                    </span>
+                    {blocker.task.name}
+                  </button>
                   <div className="flex flex-col gap-[3px]">
                     {blocker.reasons.map((reason) => {
                       const dressed = dressReason(reason)
@@ -305,10 +326,12 @@ function FocusCard({
   columns,
   mine,
   reviews,
+  onOpenTask,
 }: {
   columns: ReportColumn[]
   mine: Task[]
   reviews: Task[]
+  onOpenTask: (id: string) => void
 }) {
   const groups = columns
     .map((column) => ({ column, tasks: mine.filter((task) => task.column === column.key) }))
@@ -340,7 +363,7 @@ function FocusCard({
             </span>
           </div>
           {tasks.map((task) => (
-            <TitleLine key={task.id} task={task} />
+            <TitleLine key={task.id} task={task} onOpen={onOpenTask} />
           ))}
         </div>
       ))}
@@ -358,7 +381,7 @@ function FocusCard({
             </span>
           </div>
           {reviews.map((task) => (
-            <TitleLine key={task.id} task={task} trailing={task.assignees[0]} />
+            <TitleLine key={task.id} task={task} trailing={task.assignees[0]} onOpen={onOpenTask} />
           ))}
         </div>
       )}
@@ -366,18 +389,35 @@ function FocusCard({
   )
 }
 
-function TitleLine({ task, trailing }: { task: Task; trailing?: string }) {
+/**
+ * Une ligne de ticket cliquable.
+ *
+ * Le bouton ouvre la fiche dans l'application. ClickUp reste accessible depuis
+ * la fiche elle-même — c'est le seul endroit qui doit quitter le tableau.
+ */
+function TitleLine({
+  task,
+  trailing,
+  onOpen,
+}: {
+  task: Task
+  trailing?: string
+  onOpen: (id: string) => void
+}) {
   return (
     <div
       className="flex items-baseline gap-2 pl-[15px]"
       style={{ font: '400 13.5px/1.35 var(--font-body)' }}
     >
-      <a href={task.url} target="_blank" rel="noreferrer" style={REF}>
-        {task.ref}
-      </a>
-      <a href={task.url} target="_blank" rel="noreferrer" className="min-w-0 flex-1 truncate">
-        {task.name}
-      </a>
+      <button
+        type="button"
+        onClick={() => onOpen(task.id)}
+        className="hoverable-ink flex min-w-0 flex-1 cursor-pointer items-baseline gap-2 border-0 bg-transparent p-0 text-left"
+        style={{ font: 'inherit', color: 'inherit' }}
+      >
+        <span style={REF}>{task.ref}</span>
+        <span className="min-w-0 flex-1 truncate">{task.name}</span>
+      </button>
       {trailing && (
         <span style={{ fontSize: 12, color: 'var(--muted)' }} className="shrink-0">
           {trailing}
@@ -516,7 +556,15 @@ function plain(task: Task) {
 }
 
 /** Les commentaires qui me citent ou qui m'attendent. */
-function MentionsCard({ scoped, lookback }: { scoped: FilteredReport; lookback: number }) {
+function MentionsCard({
+  scoped,
+  lookback,
+  onOpenTask,
+}: {
+  scoped: FilteredReport
+  lookback: number
+  onOpenTask: (id: string) => void
+}) {
   return (
     <section style={CARD} className="flex flex-col gap-[14px]">
       <div className="flex items-center gap-2" style={KICKER}>
@@ -559,9 +607,14 @@ function MentionsCard({ scoped, lookback }: { scoped: FilteredReport; lookback: 
                   {mention.author}
                 </span>
                 <span>{formatDateTime(mention.when)}</span>
-                <a href={task.url} target="_blank" rel="noreferrer" style={REF}>
+                <button
+                  type="button"
+                  onClick={() => onOpenTask(task.id)}
+                  className="hoverable-ink cursor-pointer border-0 bg-transparent p-0"
+                  style={REF}
+                >
                   {task.ref}
-                </a>
+                </button>
                 {mention.isNew && (
                   <span className="tag tag-accent" style={{ padding: '2px 7px', fontSize: 10.5 }}>
                     nouveau

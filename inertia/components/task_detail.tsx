@@ -5,11 +5,15 @@ import type { DressedTask } from '@/lib/board'
 import type { ReportColumn } from '@/lib/report'
 
 /*
-| LE PANNEAU DE DÉTAIL.
+| LE DÉTAIL D'UNE TÂCHE.
 |
-| Tout ce que la liste ne peut pas montrer sans devenir illisible. Il reste
-| collé en haut de l'écran pendant qu'on parcourt la liste : on compare deux
-| tâches sans jamais perdre le contexte de celle qu'on lisait.
+| Tout ce que la liste ne peut pas montrer sans devenir illisible.
+|
+| Deux présentations, un seul contenu. Sur un onglet de tâches, le détail est
+| un panneau collé à droite : on parcourt la liste sans perdre de vue ce qu'on
+| lisait. Ailleurs — dans la synthèse du matin, où il n'y a pas de liste — le
+| même contenu s'ouvre en superposition, parce qu'un ticket doit s'ouvrir DANS
+| l'application, pas dans un onglet de navigateur.
 |
 | Rien n'y est modifiable — le tableau de bord est en lecture seule. Le seul
 | geste qu'il propose est d'aller éditer dans ClickUp.
@@ -20,18 +24,28 @@ interface TaskDetailProps {
   column: ReportColumn | undefined
 }
 
-export function TaskDetail({ dressed, column }: TaskDetailProps) {
-  const { task } = dressed
-
+/** Le panneau collant, à droite d'une liste de tâches. */
+export function TaskDetail(props: TaskDetailProps) {
   return (
     <aside
       className="sticky top-[76px] flex max-h-[calc(100vh-96px)] min-w-[300px] flex-[0_1_420px] flex-col gap-[14px] overflow-auto px-5 pt-[18px] pb-5"
       style={{
         borderRadius: 10,
-        background: dressed.mine ? 'var(--mine)' : 'var(--color-surface)',
+        background: props.dressed.mine ? 'var(--mine)' : 'var(--color-surface)',
         boxShadow: 'var(--shadow-md)',
       }}
     >
+      <TaskDetailContent {...props} />
+    </aside>
+  )
+}
+
+/** Le contenu seul, sans habillage : c'est lui que les deux présentations partagent. */
+export function TaskDetailContent({ dressed, column }: TaskDetailProps) {
+  const { task } = dressed
+
+  return (
+    <>
       <div className="flex flex-wrap items-center gap-[5px]">
         <span
           className="num mr-[3px]"
@@ -222,7 +236,7 @@ export function TaskDetail({ dressed, column }: TaskDetailProps) {
         Ouvrir dans ClickUp
         <ArrowUpRight size={14} />
       </a>
-    </aside>
+    </>
   )
 }
 

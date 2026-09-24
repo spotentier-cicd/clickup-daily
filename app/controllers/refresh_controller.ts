@@ -63,7 +63,7 @@ export default class RefreshController {
         logger: buildLogger,
         scope,
         now,
-        previous: await runs.diffReference(),
+        previous: await runs.diffReference(now),
       })
 
       await runs.save(report, 'refresh')

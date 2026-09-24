@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { router } from '@inertiajs/react'
+import { router, usePage } from '@inertiajs/react'
 import { Link } from '@adonisjs/inertia/react'
 import { WarningCircle } from '@phosphor-icons/react'
 import { Sidebar } from '@/components/sidebar'
@@ -8,6 +8,7 @@ import { ScopePopover } from '@/components/scope_popover'
 import { Synthesis } from '@/components/synthesis'
 import { TaskList } from '@/components/task_list'
 import { TaskDetail } from '@/components/task_detail'
+import { TaskSheet } from '@/components/task_sheet'
 import { VeilleBoard } from '@/components/veille_board'
 import { columnsOf, dressTask, environmentColors } from '@/lib/board'
 import { followedListIds, followedSpaces } from '#domain/scope'
@@ -66,10 +67,19 @@ export default function Dashboard({
   const [mineOnly, setMineOnly] = useState(false)
   const [scopeOpen, setScopeOpen] = useState(false)
   const [selected, setSelected] = useState<string | null>(null)
+  /* Le ticket ouvert en superposition, depuis la synthèse ou une carte. */
+  const [openTask, setOpenTask] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [elapsed, setElapsed] = useState(0)
-  const [error, setError] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
+
+  /*
+   * L'échec d'une collecte arrive par le flash, pas par `onError` d'Inertia :
+   * celui-ci ne se déclenche que sur un 422, et le contrôleur redirige
+   * toujours. Le toast du layout passe et s'efface ; ce bandeau, lui, reste
+   * sous les yeux jusqu'à la navigation suivante.
+   */
+  const { flash } = usePage()
 
   const projects = useProjectPreferences(preferences)
 
@@ -140,11 +150,17 @@ export default function Dashboard({
     return scoped.tasks.filter((task) => (!mineOnly || task.isMine) && matchesSearch(task, search))
   }, [scoped, mineOnly, search])
 
+  /*
+   * L'habillage couvre TOUT le périmètre, pas seulement ce que la vue du
+   * moment laisse passer : un blocage ou une mention peut porter sur une tâche
+   * que la recherche masque, et on doit quand même pouvoir ouvrir sa fiche.
+   * Accessoirement, taper dans la recherche ne réhabille plus tout.
+   */
   const dressed = useMemo(() => {
-    if (!report) return new Map<string, ReturnType<typeof dressTask>>()
+    if (!report || !scoped) return new Map<string, ReturnType<typeof dressTask>>()
     const options = { report, fields, preferences: projects.preferences, envColors }
-    return new Map(visible.map((task) => [task.id, dressTask(task, options)]))
-  }, [report, visible, fields, projects.preferences, envColors])
+    return new Map(scoped.tasks.map((task) => [task.id, dressTask(task, options)]))
+  }, [report, scoped, fields, projects.preferences, envColors])
 
   const tabs = useMemo(
     () =>
@@ -158,13 +174,25 @@ export default function Dashboard({
     [visible, report, environments, envColors, scoped]
   )
 
+  if (!report || !scoped) return <EmptyState />
+
   /* Le panneau de périmètre ne propose que ce qui est suivi. */
   const followedKeys = new Set(followedSpaces(scope))
   const visibleCatalog = {
     environments: catalog.environments.filter((env) => followedKeys.has(env.key)),
   }
 
-  if (!report || !scoped) return <EmptyState />
+  /*
+   * Un rapport qui n'est pas d'aujourd'hui, alors qu'on regarde le plus récent.
+   *
+   * C'est le cas quand la collecte du matin a échoué : la commande sort en
+   * erreur sans rien enregistrer — ce qui est juste — et le tableau se met à
+   * afficher la veille. Le badge « archive » ne le dit pas : il ne parle que
+   * des jours qu'on ouvre exprès. Sans ce contrôle, des données périmées ont
+   * exactement l'allure de données fraîches.
+   */
+  const archive = days.length > 0 && day !== days[0].day
+  const stale = !archive && report.generatedAt.slice(0, 10) !== new Date().toLocaleDateString('sv')
 
   /* Un onglet disparu — la veille coupée, un espace retiré — ne bloque pas la page. */
   const current = tabs.find((entry) => entry.key === tab) ?? tabs[0]
@@ -176,6 +204,9 @@ export default function Dashboard({
 
   const selectable = groups.flatMap((group) => group.tasks)
   const shown = selectable.find((entry) => entry.task.id === selected) ?? selectable[0] ?? null
+
+  /* La fiche en superposition : seulement si la tâche est encore du périmètre. */
+  const sheet = openTask ? (dressed.get(openTask) ?? null) : null
 
   const articles = report.veille
     ? report.veille.articles.filter((article) => matchesArticle(article, search))
@@ -196,10 +227,8 @@ export default function Dashboard({
         onStart: () => {
           setElapsed(0)
           setRefreshing(true)
-          setError(null)
         },
         onFinish: () => setRefreshing(false),
-        onError: () => setError('La collecte a échoué — regardez la console du serveur.'),
       }
     )
 
@@ -214,7 +243,7 @@ export default function Dashboard({
         pointage={report.pointage}
         days={days}
         day={day}
-        archive={days.length > 0 && day !== days[0].day}
+        archive={archive}
       />
 
       <div className="flex min-w-0 flex-col">
@@ -227,7 +256,7 @@ export default function Dashboard({
           refreshing={refreshing}
           elapsed={elapsed}
           onRefresh={refresh}
-          error={error}
+          error={flash.error ?? null}
           theme={theme}
           onTheme={() => setTheme(nextTheme(theme))}
           scope={
@@ -243,6 +272,7 @@ export default function Dashboard({
           }
         />
 
+        {stale && <StaleNotice generatedAt={report.generatedAt} />}
         {followedListIds(scope).length === 0 && <NoScopeNotice />}
         {followedListIds(scope).length > 0 &&
           report.tasks.length > 0 &&
@@ -257,6 +287,7 @@ export default function Dashboard({
             envColors={envColors}
             onTab={go}
             onResetScope={projects.reset}
+            onOpenTask={setOpenTask}
           />
         )}
 
@@ -293,72 +324,99 @@ export default function Dashboard({
 
         <Legend report={report} />
       </div>
+
+      {sheet && (
+        <TaskSheet
+          dressed={sheet}
+          column={report.columns.find((column) => column.key === sheet.task.column)}
+          onClose={() => setOpenTask(null)}
+        />
+      )}
     </div>
   )
 }
 
 /**
- * Aucun espace suivi.
+ * Un bandeau d'explication, au-dessus du contenu.
+ *
+ * Trois situations différentes, une seule forme : quand le tableau montre
+ * autre chose que ce qu'on attend, il le dit au même endroit et de la même
+ * manière.
+ */
+function Notice({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mx-auto w-full max-w-[1760px] px-7 pt-4">
+      <div
+        className="flex flex-wrap items-center gap-2 px-[14px] py-3"
+        style={{
+          borderRadius: 8,
+          background: 'color-mix(in srgb, var(--amber) 10%, var(--color-surface))',
+          boxShadow: '0 0 0 1px color-mix(in srgb, var(--amber) 35%, transparent)',
+          font: '400 13px/1.5 var(--font-body)',
+        }}
+      >
+        <WarningCircle size={16} color="var(--amber)" className="shrink-0" />
+        {children}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Le rapport affiché n'est pas d'aujourd'hui.
+ *
+ * Il ne s'agit pas d'une archive ouverte exprès : c'est le rapport le plus
+ * récent, et il date. La collecte du matin n'a donc pas eu lieu, ou a échoué —
+ * et sans ce bandeau, des données périmées ont l'allure de données fraîches.
+ */
+function StaleNotice({ generatedAt }: { generatedAt: string }) {
+  return (
+    <Notice>
+      <span>
+        Ce rapport date du {formatDateTime(generatedAt)} — la collecte d’aujourd’hui n’a pas eu
+        lieu, ou a échoué. Relancez-la pour voir la journée en cours.
+      </span>
+    </Notice>
+  )
+}
+
+/**
+ * Aucune liste suivie.
  *
  * Le tableau continue d'afficher le dernier rapport — un rapport enregistré
  * reste vrai — mais plus rien ne sera collecté tant que le périmètre est vide.
- * Sans cette bande, l'écart entre « tout est décoché » et « tout s'affiche »
- * n'a aucune explication à portée de regard.
  */
 function NoScopeNotice() {
   return (
-    <div className="mx-auto w-full max-w-[1760px] px-7 pt-4">
-      <div
-        className="flex flex-wrap items-center gap-2 px-[14px] py-3"
-        style={{
-          borderRadius: 8,
-          background: 'color-mix(in srgb, var(--amber) 10%, var(--color-surface))',
-          boxShadow: '0 0 0 1px color-mix(in srgb, var(--amber) 35%, transparent)',
-          font: '400 13px/1.5 var(--font-body)',
-        }}
-      >
-        <WarningCircle size={16} color="var(--amber)" />
-        <span>
-          Aucune liste suivie : ce que vous voyez est le dernier rapport collecté, et la prochaine
-          collecte ne ramènera rien.
-        </span>
-        <Link href="/parametres" style={{ color: 'var(--color-accent)', fontWeight: 500 }}>
-          Choisir les listes
-        </Link>
-      </div>
-    </div>
+    <Notice>
+      <span>
+        Aucune liste suivie : ce que vous voyez est le dernier rapport collecté, et la prochaine
+        collecte ne ramènera rien.
+      </span>
+      <Link href="/parametres" style={{ color: 'var(--color-accent)', fontWeight: 500 }}>
+        Choisir les listes
+      </Link>
+    </Notice>
   )
 }
 
 /**
- * Le rapport affiché ne contient aucun espace suivi.
+ * Le rapport affiché ne contient rien du périmètre actuel.
  *
- * C'est le cas d'une archive antérieure au paramétrage, ou d'un rapport
- * collecté avant qu'on change d'avis sur les espaces. Un écran vide sans
- * explication ressemblerait à une panne.
+ * Une archive antérieure au paramétrage, ou un rapport collecté avant qu'on
+ * change d'avis. Un écran vide sans explication ressemblerait à une panne.
  */
 function OutOfScopeNotice() {
   return (
-    <div className="mx-auto w-full max-w-[1760px] px-7 pt-4">
-      <div
-        className="flex flex-wrap items-center gap-2 px-[14px] py-3"
-        style={{
-          borderRadius: 8,
-          background: 'color-mix(in srgb, var(--amber) 10%, var(--color-surface))',
-          boxShadow: '0 0 0 1px color-mix(in srgb, var(--amber) 35%, transparent)',
-          font: '400 13px/1.5 var(--font-body)',
-        }}
-      >
-        <WarningCircle size={16} color="var(--amber)" />
-        <span>
-          Ce rapport ne contient rien du périmètre actuel — il a été collecté avant, ou vous avez
-          décoché ses listes depuis. Lancez une collecte pour le remettre à jour.
-        </span>
-        <Link href="/parametres" style={{ color: 'var(--color-accent)', fontWeight: 500 }}>
-          Paramétrage
-        </Link>
-      </div>
-    </div>
+    <Notice>
+      <span>
+        Ce rapport ne contient rien du périmètre actuel — il a été collecté avant, ou vous avez
+        décoché ses listes depuis. Lancez une collecte pour le remettre à jour.
+      </span>
+      <Link href="/parametres" style={{ color: 'var(--color-accent)', fontWeight: 500 }}>
+        Paramétrage
+      </Link>
+    </Notice>
   )
 }
 

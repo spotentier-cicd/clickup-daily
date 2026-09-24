@@ -1,4 +1,3 @@
-import app from '@adonisjs/core/services/app'
 import { defineConfig } from '@adonisjs/cors'
 
 /**
@@ -8,17 +7,20 @@ import { defineConfig } from '@adonisjs/cors'
  * https://docs.adonisjs.com/guides/security/cors
  */
 const corsConfig = defineConfig({
-  /**
-   * Enable or disable CORS handling globally.
+  /*
+   * CORS désactivé, en développement comme ailleurs.
+   *
+   * Ce serveur ne sert qu'une application Inertia de même origine : aucune
+   * page tierce n'a de raison légitime de l'appeler. L'activer laissait
+   * `origin: true` en développement — le mode nominal d'après le README —
+   * avec `credentials: true`, sur des routes sans authentification : n'importe
+   * quel onglet ouvert pouvait lire le rapport complet, titres, descriptions,
+   * commentaires et pointage compris. Le CSRF de Shield ne couvre que les
+   * écritures, pas la lecture.
    */
-  enabled: true,
+  enabled: false,
 
-  /**
-   * In development, allow every origin to simplify local front/backend setup.
-   * In production, keep an explicit allowlist (empty by default, so no
-   * cross-origin browser access is allowed until configured).
-   */
-  origin: app.inDev ? true : [],
+  origin: [],
 
   /**
    * HTTP methods accepted for cross-origin requests.

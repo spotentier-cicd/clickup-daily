@@ -11,7 +11,7 @@ import { buildPointage } from '#domain/rules/pointage'
 import { computeBlockers } from '#domain/rules/blockers'
 import { computeDiff, toSnapshot } from '#domain/rules/diff'
 import { followedListIds, followedStatuses, isTaskInScope, resolveTeam } from '#domain/scope'
-import { displayTargets, findMentions, mentionTargets } from '#domain/mention/comments'
+import { commentText, displayTargets, findMentions, mentionTargets } from '#domain/mention/comments'
 import { asInt, msToDateTime } from '#domain/time'
 import type { Report, ReportStats, TaskComment } from '#domain/report'
 import type { TaskView } from '#domain/task/types'
@@ -347,7 +347,14 @@ export class ReportBuilder {
         comments[task.id] = latest.map((comment) => ({
           author: comment.user?.username ?? '?',
           at: msToDateTime(comment.date, config.timezone),
-          text: (comment.comment_text ?? '').split(/\s+/).filter(Boolean).join(' '),
+          /*
+           * commentText() gère les deux formes de l'API : texte à plat ET
+           * blocs. Le refaire à la main ici ne lisait que la première, donc un
+           * commentaire portant une mention ou un lien s'affichait vide sous
+           * la carte — alors que findMentions, trois lignes plus bas, le lisait
+           * correctement.
+           */
+          text: commentText(comment),
         }))
       }
     }
