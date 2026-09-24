@@ -1,4 +1,5 @@
 import db from '@adonisjs/lucid/services/db'
+import config from '#config/clickup_daily'
 import { type DateTime } from 'luxon'
 import Run from '#models/run'
 import TaskSnapshot from '#models/task_snapshot'
@@ -107,9 +108,32 @@ export class RunRepository {
     }
   }
 
-  /** Le rapport sérialisé d'un run, prêt à partir en props Inertia. */
+  /**
+   * Le rapport sérialisé d'un run, prêt à partir en props Inertia.
+   *
+   * Les archives sont relues longtemps après avoir été écrites : un rapport
+   * enregistré avant l'ajout d'un champ au contrat n'en a pas. On complète donc
+   * à la lecture plutôt que de laisser l'affichage planter sur une archive — ce
+   * qui viderait l'écran sans rien expliquer.
+   */
   payloadOf(run: Run): ReportDto {
-    return JSON.parse(run.payload) as ReportDto
+    const brut = JSON.parse(run.payload) as Partial<ReportDto>
+
+    return {
+      ...brut,
+      comments: brut.comments ?? {},
+      branches: brut.branches ?? {},
+      mentions: brut.mentions ?? [],
+      blockers: brut.blockers ?? [],
+      pointage: brut.pointage ?? null,
+      thresholds: brut.thresholds ?? {
+        staleAfterDays: config.staleAfterDays,
+        reviewWaitDays: config.blockers.reviewWaitDays,
+        recetteWaitDays: config.blockers.recetteWaitDays,
+        targetHoursPerDay: config.temps.targetHoursPerDay,
+        mentionsLookbackDays: config.mentions.lookbackDays,
+      },
+    } as ReportDto
   }
 
   /** Les journées disponibles, de la plus récente à la plus ancienne. */

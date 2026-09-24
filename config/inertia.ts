@@ -1,8 +1,17 @@
 import { defineConfig } from '@adonisjs/inertia'
 
 const inertiaConfig = defineConfig({
-  /**
-   * Server-side rendering options.
+  /*
+   * Rendu serveur désactivé (défaut du kit).
+   *
+   * L'activer ponctuellement est en revanche le meilleur test de fumée qu'on
+   * ait : une erreur de rendu devient un 500 avec sa pile au lieu d'une page
+   * blanche silencieuse. C'est comme ça qu'a été trouvé le plantage sur les
+   * archives antérieures à l'ajout de `thresholds` au contrat.
+   *
+   * On ne le laisse pas actif en permanence parce que readView() lit
+   * localStorage à l'initialisation de l'état : le serveur rendrait le plateau
+   * fermé alors que le navigateur le sait ouvert, et l'hydratation divergerait.
    */
   ssr: {
     /**
