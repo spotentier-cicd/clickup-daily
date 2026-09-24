@@ -1,7 +1,9 @@
 import { useCallback, useMemo, useState } from 'react'
 import { router } from '@inertiajs/react'
 import { defaultPreferences, isTaskVisible, listKey } from '#domain/projects'
+import { isTaskInScope } from '#domain/scope'
 import type { FieldUsage, ProjectCatalog, ProjectPreferences } from '#domain/projects'
+import type { ScopePreferences } from '#domain/scope'
 import type { Report, Task } from '@/lib/report'
 
 /*
@@ -13,7 +15,7 @@ import type { Report, Task } from '@/lib/report'
 | sinon le tableau de bord se contredirait.
 */
 
-export type { FieldUsage, ProjectCatalog, ProjectPreferences }
+export type { FieldUsage, ProjectCatalog, ProjectPreferences, ScopePreferences }
 
 export interface FilteredReport {
   tasks: Task[]
@@ -30,6 +32,8 @@ export interface FilteredReport {
   diff: Report['diff']
   /** Tâches retirées par le choix des projets, pour pouvoir le dire. */
   hiddenCount: number
+  /** Tâches hors du périmètre réglé dans /parametres : liste ou statut décoché. */
+  hiddenByScope: number
   counts: { total: number; mine: number; bugs: number }
 }
 
@@ -40,8 +44,23 @@ export interface FilteredReport {
  * d'être ramassées et archivées. Sinon computeDiff verrait des entrées et des
  * sorties fantômes à chaque changement de périmètre.
  */
-export function filterReport(report: Report, preferences: ProjectPreferences): FilteredReport {
-  const tasks = report.tasks.filter((task) => isTaskVisible(task, preferences))
+export function filterReport(
+  report: Report,
+  preferences: ProjectPreferences,
+  scope: ScopePreferences
+): FilteredReport {
+  /*
+   * Deux filtres, deux origines, comptés séparément — sinon « 12 masquées » ne
+   * dirait pas où aller les rechercher :
+   *
+   *   1. le périmètre réglé dans /parametres — liste suivie, statut coché.
+   *      Décocher fait sortir la tâche du tableau IMMÉDIATEMENT, y compris
+   *      d'un rapport déjà collecté : la case vaut pour ce qu'on voit, pas
+   *      seulement pour la prochaine collecte ;
+   *   2. le panneau de périmètre, qui ne fait que resserrer la vue du moment.
+   */
+  const inScope = report.tasks.filter((task) => isTaskInScope(task, scope))
+  const tasks = inScope.filter((task) => isTaskVisible(task, preferences))
   const visibleIds = new Set(tasks.map((task) => task.id))
   const dansLePerimetre = (t: { id: string }) => visibleIds.has(t.id)
 
@@ -65,7 +84,8 @@ export function filterReport(report: Report, preferences: ProjectPreferences): F
         (sortie) => !preferences.hiddenEnvironments.includes(sortie.snapshot.envKey)
       ),
     },
-    hiddenCount: report.tasks.length - tasks.length,
+    hiddenCount: inScope.length - tasks.length,
+    hiddenByScope: report.tasks.length - inScope.length,
     counts: {
       total: tasks.length,
       mine: tasks.filter((task) => task.isMine).length,

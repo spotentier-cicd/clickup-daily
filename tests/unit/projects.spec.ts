@@ -29,7 +29,7 @@ const TASKS = [
 ]
 
 test.group('buildProjectCatalog', () => {
-  test('recense les espaces de la config et les listes des données', ({ assert }) => {
+  test('recense les espaces reçus et les listes des données', ({ assert }) => {
     const catalog = buildProjectCatalog(TASKS, ENVIRONMENTS)
 
     assert.deepEqual(

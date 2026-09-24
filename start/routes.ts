@@ -19,3 +19,7 @@ router.post('/refresh', [controllers.Refresh, 'store']).as('refresh')
 
 /* Choix des projets affichés. */
 router.put('/preferences/projects', [controllers.Preferences, 'update']).as('preferences.projects')
+
+/* Paramétrage : espaces ClickUp suivis et types de tickets affichés. */
+router.get('/parametres', [controllers.Settings, 'index']).as('settings')
+router.put('/preferences/scope', [controllers.Settings, 'update']).as('preferences.scope')

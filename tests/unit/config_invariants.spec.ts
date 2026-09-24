@@ -18,51 +18,24 @@ test.group('Invariants de configuration', () => {
     assert.deepEqual(checkConfigInvariants(clickUpDailyConfig), [])
   })
 
-  test('un statut sans colonne est signalé', ({ assert }) => {
+  test('une colonne sans indice est signalée', ({ assert }) => {
     const config = withConfig((c) => {
-      c.environments[0].statuses.push('dev terminé')
+      c.columns[0].hints = []
     })
 
     const problems = checkConfigInvariants(config)
     assert.lengthOf(problems, 1)
-    assert.include(problems[0], 'dev terminé')
-    assert.include(problems[0], 'aucune colonne')
+    assert.include(problems[0], 'aucun indice')
   })
 
-  test('un statut repris par deux colonnes est signalé', ({ assert }) => {
+  test('la clé réservée « autres » est signalée', ({ assert }) => {
     const config = withConfig((c) => {
-      c.columns[1].match.push(c.environments[0].statuses[0])
-    })
-
-    const problems = checkConfigInvariants(config)
-    assert.isAbove(problems.length, 0)
-    assert.isTrue(problems.some((p) => p.includes('ambigu')))
-  })
-
-  test('la comparaison des statuts ignore accents et casse', ({ assert }) => {
-    const config = withConfig((c) => {
-      c.environments[0].statuses = c.environments[0].statuses.map((s) => s.toUpperCase())
-      c.environments[1].statuses = c.environments[1].statuses.map((s) => s.toUpperCase())
-      c.environments[2].statuses = c.environments[2].statuses.map((s) => s.toUpperCase())
-    })
-
-    assert.deepEqual(checkConfigInvariants(config), [])
-  })
-
-  test('une colonne qui ne correspond à rien est signalée', ({ assert }) => {
-    const config = withConfig((c) => {
-      c.columns.push({
-        key: 'fantome',
-        label: 'Fantôme',
-        match: ['statut inexistant'],
-        color: '#000',
-      })
+      c.columns.push({ key: 'autres', label: 'Autres', hints: ['x'], color: '#000' })
     })
 
     const problems = checkConfigInvariants(config)
     assert.lengthOf(problems, 1)
-    assert.include(problems[0], 'fantome')
-    assert.include(problems[0], 'toujours vide')
+    assert.include(problems[0], 'réservée')
   })
 
   test('une source de veille dans un groupe inexistant est signalée', ({ assert }) => {
@@ -77,7 +50,7 @@ test.group('Invariants de configuration', () => {
 
   test('les clés dupliquées sont signalées', ({ assert }) => {
     const config = withConfig((c) => {
-      c.environments.push({ ...c.environments[0] })
+      c.columns.push({ ...c.columns[0] })
     })
 
     const problems = checkConfigInvariants(config)

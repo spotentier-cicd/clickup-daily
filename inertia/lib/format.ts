@@ -18,6 +18,8 @@ const LONG_DATE = new Intl.DateTimeFormat('fr-FR', {
   year: 'numeric',
 })
 const WEEKDAY = new Intl.DateTimeFormat('fr-FR', { weekday: 'short' })
+const SHORT_DATE = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' })
+const TIME = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' })
 
 export function formatDate(iso: string | null): string {
   return iso ? DATE.format(new Date(iso)) : ''
@@ -33,6 +35,28 @@ export function formatLongDate(iso: string): string {
 
 export function formatWeekday(iso: string): string {
   return WEEKDAY.format(new Date(iso)).replace('.', '')
+}
+
+/** « 30 sept. » — pour une échéance, où l'année se devine. */
+export function formatShortDate(iso: string | null): string {
+  return iso ? SHORT_DATE.format(new Date(iso)) : ''
+}
+
+export function formatTime(iso: string): string {
+  return TIME.format(new Date(iso))
+}
+
+/**
+ * Jours pleins écoulés entre deux instants ISO.
+ *
+ * La référence est la date de génération du rapport, jamais l'horloge du
+ * navigateur : une archive ouverte trois semaines plus tard doit continuer de
+ * dire « il y a 2 j », sinon elle se raconte l'histoire d'aujourd'hui.
+ */
+export function daysSince(iso: string | null, reference: string): number | null {
+  if (!iso) return null
+  const elapsed = new Date(reference).getTime() - new Date(iso).getTime()
+  return Math.max(0, Math.floor(elapsed / 86_400_000))
 }
 
 /** « 4h30 », « 2h », « 45min » — vide en dessous de la minute. */
@@ -82,49 +106,3 @@ export function formatAge(days: number | null): string {
 export function pluralize(count: number, singular: string, plural = `${singular}s`): string {
   return `${count} ${count > 1 ? plural : singular}`
 }
-
-export const PRIORITY_LABEL: Record<string, string> = {
-  urgent: 'Urgent',
-  high: 'Haute',
-  normal: 'Normale',
-  low: 'Basse',
-}
-
-/**
- * Un point de 5 px, et RIEN pour normal et basse.
- *
- * La majorité des tâches sont en priorité normale : les colorier reviendrait à
- * ne rien dire tout en occupant l'œil. Le libellé complet reste disponible en
- * infobulle.
- */
-export const PRIORITY_DOT: Record<string, string> = {
-  urgent: 'bg-urgent',
-  high: 'bg-attention',
-}
-
-/**
- * Le ton d'un blocage, branché sur la table SEVERITY du domaine.
- *
- * 0 commentaire assigné · 1 échéance dépassée · 2 je bloque quelqu'un → urgent
- * 3 travail non poussé · 4 ma revue attend                            → attention
- * 5 sans activité · 6 dort sur recette                                → neutre
- *
- * Ça traîne n'est pas ça brûle : les deux derniers ne prennent pas de couleur.
- */
-export function severityTone(severity: number): 'urgent' | 'attention' | 'muted' {
-  if (severity <= 2) return 'urgent'
-  if (severity <= 4) return 'attention'
-  return 'muted'
-}
-
-export const TONE_TEXT = {
-  urgent: 'text-urgent',
-  attention: 'text-attention',
-  muted: 'text-muted-foreground',
-} as const
-
-export const TONE_RAIL = {
-  urgent: 'before:bg-urgent',
-  attention: 'before:bg-attention',
-  muted: '',
-} as const

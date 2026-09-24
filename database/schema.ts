@@ -25,7 +25,6 @@ export class PreferenceSchema extends BaseModel {
 export class RunSchema extends BaseModel {
   static $columns = [
     'apiCalls',
-    'backlogExcluded',
     'blockers',
     'bugTasks',
     'createdAt',
@@ -43,8 +42,6 @@ export class RunSchema extends BaseModel {
   $columns = RunSchema.$columns
   @column()
   declare apiCalls: number
-  @column()
-  declare backlogExcluded: number
   @column()
   declare blockers: number
   @column()

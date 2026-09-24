@@ -1,5 +1,4 @@
 import { inject } from '@adonisjs/core'
-import config from '#config/clickup_daily'
 import { RunRepository } from '#services/run_repository'
 import { PreferencesRepository } from '#services/preferences_repository'
 import { buildFieldCatalog, buildProjectCatalog } from '#domain/projects'
@@ -37,16 +36,12 @@ export default class DashboardController {
        * Le catalogue est recalculé à chaque affichage : les listes n'existent
        * que dans les données, et elles bougent d'un sprint à l'autre.
        */
-      catalog: buildProjectCatalog(
-        (report?.tasks ?? []) as never,
-        config.environments.map((environment) => ({
-          key: environment.key,
-          label: environment.label,
-        }))
-      ),
+      catalog: buildProjectCatalog((report?.tasks ?? []) as never, report?.environments ?? []),
       /* Ce que les cartes peuvent afficher, avec de quoi repérer les champs inutiles. */
       fields: buildFieldCatalog((report?.tasks ?? []) as never),
       preferences: await preferences.projects(),
+      /* Le filtre par type de ticket, réglé dans /parametres. */
+      scope: await preferences.scope(),
       days: await runs.availableDays(),
       day: run?.day ?? null,
       trigger: run?.trigger ?? null,

@@ -4,12 +4,13 @@ import { ClickUpClient } from '#clickup/client'
 import { mapWithConcurrency } from '#clickup/rate_limiter'
 import { ClickUpError } from '#clickup/errors'
 import { branchesForTask, GitService } from '#services/git_service'
+import { VeilleService } from '#services/veille_service'
 import { buildColumns } from '#domain/task/columns'
 import { toTaskView } from '#domain/task/view'
-import { isBacklog } from '#domain/rules/backlog'
 import { buildPointage } from '#domain/rules/pointage'
 import { computeBlockers } from '#domain/rules/blockers'
 import { computeDiff, toSnapshot } from '#domain/rules/diff'
+import { followedListIds, followedStatuses, isTaskInScope, resolveTeam } from '#domain/scope'
 import { displayTargets, findMentions, mentionTargets } from '#domain/mention/comments'
 import { asInt, msToDateTime } from '#domain/time'
 import type { Report, ReportStats, TaskComment } from '#domain/report'
@@ -17,6 +18,7 @@ import type { TaskView } from '#domain/task/types'
 import type { TaskSnapshot } from '#domain/rules/diff'
 import type { RawComment } from '#domain/mention/comments'
 import type { ClickUpDailyConfig } from '#domain/config/types'
+import type { ScopePreferences } from '#domain/scope'
 import type { GitBranch } from '#domain/git/types'
 
 export interface BuildLogger {
@@ -29,6 +31,8 @@ export interface BuildReportOptions {
   config: ClickUpDailyConfig
   client: ClickUpClient
   logger: BuildLogger
+  /** Espaces à interroger, choisis dans la page de paramétrage. */
+  scope: ScopePreferences
   now?: DateTime
   /** Run précédent, pour « ce qui a changé ». */
   previous?: { at: DateTime; tasks: TaskSnapshot[] } | null
@@ -37,6 +41,7 @@ export interface BuildReportOptions {
     git?: boolean
     mentions?: boolean
     enrich?: boolean
+    veille?: boolean
   }
 }
 
@@ -49,70 +54,106 @@ export interface BuildReportOptions {
  */
 @inject()
 export class ReportBuilder {
-  constructor(private readonly git: GitService) {}
+  constructor(
+    private readonly git: GitService,
+    private readonly veille: VeilleService
+  ) {}
 
   async build(options: BuildReportOptions): Promise<Report> {
-    const { config, client, logger, previous = null, skip = {} } = options
+    const { config, client, logger, scope, previous = null, skip = {} } = options
     const startedAt = Date.now()
     const now = options.now ?? DateTime.now().setZone(config.timezone)
-    const teamId = process.env.CLICKUP_TEAM_ID || config.workspaceId
+
+    /*
+     * Rien n'est écrit en dur : le jeton donne l'utilisateur et ses équipes.
+     * C'est ce qui rend le projet utilisable tel quel par quelqu'un d'autre.
+     */
+    const teams = await client.teams()
+    const team = resolveTeam(teams, scope, process.env.CLICKUP_TEAM_ID)
+    if (!team) {
+      throw new ClickUpError('Ce jeton ClickUp ne donne accès à aucune équipe.')
+    }
+    const teamId = team.id
 
     const me = await client.me()
-    const meUserId = asInt(me.id) || config.meUserId
+    const meUserId = asInt(me.id)
+    if (!meUserId) {
+      throw new ClickUpError('ClickUp n’a pas rendu d’identifiant pour ce jeton.')
+    }
     const meName = me.username ?? ''
-    logger.info(`Utilisateur ${meName || meUserId}`)
+    logger.info(`Équipe ${team.name} · utilisateur ${meName || meUserId}`)
 
     const columns = buildColumns(config.columns)
     const taskTypeNames = await client.customItemTypes(teamId)
 
-    /* Les espaces en parallèle : c'était le premier goulot de la v1. */
-    const perEnvironment = await mapWithConcurrency(config.environments, 3, async (environment) => {
-      logger.info(`Récupération ${environment.key} (espace ${environment.spaceId})…`)
-      const raw = await client.teamTasks(teamId, environment.spaceId, environment.statuses)
-      return { environment, raw }
-    })
+    /*
+     * Le périmètre est une liste de LISTES, pas d'espaces : c'est le niveau où
+     * ClickUp définit les statuts, donc le seul où « je veux voir nouveau ici
+     * mais pas là » ait un sens. On n'interroge que ce qui est coché.
+     */
+    const listIds = followedListIds(scope)
+    const statuses = followedStatuses(scope)
+    logger.info(
+      `Périmètre : ${listIds.length} liste${listIds.length > 1 ? 's' : ''}, ` +
+        `${statuses.length} statut${statuses.length > 1 ? 's' : ''}`
+    )
+
+    if (listIds.length === 0) {
+      logger.warn('Aucune liste suivie : ouvrez /parametres pour choisir ce qu’on collecte.')
+    }
+
+    /* Les noms d'espaces : les tâches ne portent que leur identifiant. */
+    const spaces = await client.spaces(teamId)
+    const spaceNames = new Map(spaces.map((space) => [space.id, space.name]))
+
+    const raw = await client.teamTasks(teamId, listIds, statuses)
 
     const tasks: TaskView[] = []
     const seen = new Set<string>()
-    let backlogExcluded = 0
+    const kept = new Map<string, number>()
     let outOfScope = 0
 
-    for (const { environment, raw } of perEnvironment) {
-      let kept = 0
-      let excluded = 0
+    for (const rawTask of raw) {
+      if (seen.has(String(rawTask.id))) continue
 
-      for (const rawTask of raw) {
-        if (seen.has(String(rawTask.id))) continue
-
-        const task = toTaskView({
-          raw: rawTask,
-          environment,
-          columns,
-          config,
-          meUserId,
-          now,
-          taskTypeNames,
-        })
-        if (!task) {
-          outOfScope++
-          continue
-        }
-
-        if (isBacklog(task, config.backlog)) {
-          excluded++
-          continue
-        }
-
-        seen.add(task.id)
-        tasks.push(task)
-        kept++
+      /*
+       * L'API a filtré sur l'UNION des statuts suivis ; le tri fin se fait
+       * ici, liste par liste. Une tâche « nouveau » dans une liste où seul
+       * « dev en cours » est coché ressort donc à ce point.
+       */
+      const listId = String(rawTask.list?.id ?? '')
+      if (!isTaskInScope({ listId, status: rawTask.status?.status ?? '' }, scope)) {
+        outOfScope++
+        continue
       }
 
-      backlogExcluded += excluded
-      logger.info(
-        `${environment.key} : ${kept} tâches dans le périmètre` +
-          (excluded ? ` (${excluded} écartées : non priorisées au fond d'un backlog)` : '')
-      )
+      const spaceId = String(rawTask.space?.id ?? '')
+      const task = toTaskView({
+        raw: rawTask,
+        space: { key: spaceId, label: spaceNames.get(spaceId) ?? spaceId },
+        columns,
+        mapping: scope.columns,
+        config,
+        meUserId,
+        now,
+        taskTypeNames,
+      })
+
+      seen.add(task.id)
+      tasks.push(task)
+      kept.set(spaceId, (kept.get(spaceId) ?? 0) + 1)
+    }
+
+    /* Les espaces réellement représentés, dans l'ordre où ClickUp les rend. */
+    const environments = spaces
+      .filter((space) => kept.has(space.id))
+      .map((space) => ({ key: space.id, label: space.name }))
+
+    for (const environment of environments) {
+      logger.info(`${environment.label} : ${kept.get(environment.key)} tâches`)
+    }
+    if (outOfScope) {
+      logger.info(`${outOfScope} écartées : statut non coché pour leur liste`)
     }
 
     const pointage = skip.temps
@@ -123,6 +164,7 @@ export class ReportBuilder {
     }
 
     const branches = await this.#loadBranches(config, tasks, logger, skip.git)
+    const veille = await this.#loadVeille(config, now, previous?.at ?? null, logger, skip.veille)
     const { comments, mentions } = await this.#loadComments({
       client,
       config,
@@ -155,7 +197,6 @@ export class ReportBuilder {
       total: tasks.length,
       mine: tasks.filter((task) => task.isMine).length,
       bugs: tasks.filter((task) => task.isBug).length,
-      backlogExcluded,
       outOfScope,
       apiCalls: client.requestCount,
       durationMs: Date.now() - startedAt,
@@ -169,7 +210,7 @@ export class ReportBuilder {
       generatedAt: now,
       timezone: config.timezone,
       me: { id: meUserId, name: meName },
-      environments: config.environments.map((e) => ({ key: e.key, label: e.label })),
+      environments,
       columns,
       tasks,
       comments,
@@ -177,6 +218,7 @@ export class ReportBuilder {
       mentions,
       blockers,
       pointage,
+      veille,
       diff,
       stats,
       thresholds: {
@@ -228,6 +270,33 @@ export class ReportBuilder {
     }
 
     return byTask
+  }
+
+  /**
+   * La veille ne fait jamais échouer un rapport : sans réseau, elle rend
+   * simplement null, et le tableau de bord se passe de son onglet.
+   */
+  async #loadVeille(
+    config: ClickUpDailyConfig,
+    now: DateTime,
+    since: DateTime | null,
+    logger: BuildLogger,
+    skip?: boolean
+  ) {
+    if (skip || !config.veille.enabled) return null
+
+    try {
+      return await this.veille.collect({
+        config: config.veille,
+        zone: config.timezone,
+        now,
+        since,
+        logger,
+      })
+    } catch (error) {
+      logger.warn(`Veille indisponible : ${describe(error)}`)
+      return null
+    }
   }
 
   /**

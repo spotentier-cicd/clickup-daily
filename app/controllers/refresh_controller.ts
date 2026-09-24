@@ -6,6 +6,8 @@ import { ClickUpClient } from '#clickup/client'
 import { ClickUpError } from '#clickup/errors'
 import { ReportBuilder } from '#services/report_builder'
 import { RunRepository } from '#services/run_repository'
+import { PreferencesRepository } from '#services/preferences_repository'
+import { followedListIds } from '#domain/scope'
 import type { HttpContext } from '@adonisjs/core/http'
 
 /** Une collecte à la fois : un second clic répond « déjà en cours ». */
@@ -23,10 +25,21 @@ export default class RefreshController {
   async store(
     { response, session, logger }: HttpContext,
     builder: ReportBuilder,
-    runs: RunRepository
+    runs: RunRepository,
+    preferences: PreferencesRepository
   ) {
     if (running) {
       session.flash('error', 'Une collecte est déjà en cours.')
+      return response.redirect().back()
+    }
+
+    /* Un rapport vide écraserait le dernier rapport valable : on s'arrête avant. */
+    const scope = await preferences.scope()
+    if (followedListIds(scope).length === 0) {
+      session.flash(
+        'error',
+        'Aucune liste suivie : choisissez ce qu’on collecte dans le paramétrage.'
+      )
       return response.redirect().back()
     }
 
@@ -48,6 +61,7 @@ export default class RefreshController {
         config,
         client,
         logger: buildLogger,
+        scope,
         now,
         previous: await runs.diffReference(),
       })

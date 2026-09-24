@@ -1,6 +1,22 @@
 export type Theme = 'auto' | 'light' | 'dark'
 
+/*
+| Trois états, et un seul porteur : l'attribut data-theme sur <html>.
+|
+| « auto » ne pose PAS d'attribut — c'est l'absence qui laisse la main à
+| prefers-color-scheme. Poser data-theme="auto" figerait la page sur la
+| définition sombre de base, puisque le sélecteur clair est
+| :root:not([data-theme]).
+*/
 const KEY = 'cud-theme'
+
+export const THEMES: Theme[] = ['auto', 'light', 'dark']
+
+export const THEME_LABEL: Record<Theme, string> = {
+  auto: 'Thème : automatique',
+  light: 'Thème : clair',
+  dark: 'Thème : sombre',
+}
 
 export function readTheme(): Theme {
   try {
@@ -12,13 +28,17 @@ export function readTheme(): Theme {
   return 'auto'
 }
 
-/** Applique le thème et le mémorise. « auto » suit le réglage du système. */
-export function applyTheme(theme: Theme): void {
-  const dark =
-    theme === 'dark' ||
-    (theme === 'auto' && globalThis.matchMedia?.('(prefers-color-scheme: dark)').matches)
+/** Le thème suivant dans le cycle auto → clair → sombre → auto. */
+export function nextTheme(theme: Theme): Theme {
+  return THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]
+}
 
-  document.documentElement.classList.toggle('dark', Boolean(dark))
+/** Applique le thème et le mémorise. */
+export function applyTheme(theme: Theme): void {
+  const root = document.documentElement
+
+  if (theme === 'auto') root.removeAttribute('data-theme')
+  else root.dataset.theme = theme
 
   try {
     localStorage.setItem(KEY, theme)

@@ -2,7 +2,6 @@ import { test } from '@japa/runner'
 import { DateTime } from 'luxon'
 import { readFileSync } from 'node:fs'
 import { isBug } from '#domain/rules/bugs'
-import { isBacklog } from '#domain/rules/backlog'
 import { toTaskView } from '#domain/task/view'
 import { buildColumns } from '#domain/task/columns'
 import clickUpDailyConfig from '#config/clickup_daily'
@@ -19,21 +18,25 @@ const TYPE_NAMES = new Map(
   Object.entries(fixture._custom_items).map(([id, label]) => [Number(id), label])
 )
 
+/* Les espaces sont découverts en production ; la fixture en fournit trois. */
+const SPACES: Record<string, { key: string; label: string }> = {
+  ROC: { key: 'ROC', label: 'ROC' },
+  ROCND: { key: 'ROCND', label: 'ROC New Deal' },
+  TEMPO: { key: 'TEMPO', label: 'Tempo' },
+}
+
 function viewsOf(envKey: string): TaskView[] {
-  const environment = clickUpDailyConfig.environments.find((e) => e.key === envKey)!
-  return fixture[envKey]
-    .map((raw) =>
-      toTaskView({
-        raw,
-        environment,
-        columns: COLUMNS,
-        config: clickUpDailyConfig,
-        meUserId: ME,
-        now: NOW,
-        taskTypeNames: TYPE_NAMES,
-      })
-    )
-    .filter((v): v is TaskView => v !== null)
+  return fixture[envKey].map((raw) =>
+    toTaskView({
+      raw,
+      space: SPACES[envKey],
+      columns: COLUMNS,
+      config: clickUpDailyConfig,
+      meUserId: ME,
+      now: NOW,
+      taskTypeNames: TYPE_NAMES,
+    })
+  )
 }
 
 function byRef(ref: string): TaskView {
@@ -45,11 +48,20 @@ function byRef(ref: string): TaskView {
 }
 
 test.group('toTaskView', () => {
-  test('écarte une tâche dont le statut n’a pas de colonne', ({ assert }) => {
-    /* ROC-1650 est en « production », qui n'est dans aucune colonne. */
-    const refs = viewsOf('ROC').map((v) => v.ref)
-    assert.notInclude(refs, 'ROC-1650')
-    assert.lengthOf(refs, 3)
+  test('range dans « Autres » un statut que le workflow ne connaît pas', ({ assert }) => {
+    /* ROC-1650 est en « production », qui n'est repris par aucune colonne. */
+    const task = viewsOf('ROC').find((v) => v.ref === 'ROC-1650')!
+
+    assert.exists(task, 'la tâche n’est plus écartée, elle est rangée à part')
+    assert.equal(task.column, 'autres')
+    assert.equal(task.columnLabel, 'Autres')
+  })
+
+  test('porte l’identité de sa liste', ({ assert }) => {
+    const task = byRef('ROC-1801')
+
+    assert.equal(task.listId, '901514487732')
+    assert.equal(task.listName, 'Sprint 59 (9/15 - 10/5)')
   })
 
   test('remplit l’identité de la tâche', ({ assert }) => {
@@ -71,7 +83,7 @@ test.group('toTaskView', () => {
   test('résout le type de tâche, et laisse vide pour une tâche ordinaire', ({ assert }) => {
     assert.equal(byRef('ROC-1802').taskType, 'User Story')
     assert.equal(byRef('ROC-1801').taskType, 'Bug')
-    assert.equal(byRef('ROC-1790').taskType, '', 'custom_item_id vaut 0')
+    assert.equal(byRef('ROC-1790').taskType, 'Tâche', 'custom_item_id vaut 0')
   })
 
   test('écarte les champs personnalisés au préfixe ignoré', ({ assert }) => {
@@ -101,7 +113,7 @@ test.group('toTaskView', () => {
   test('retombe sur l’id quand la tâche n’a pas de référence', ({ assert }) => {
     const task = toTaskView({
       raw: { id: '999', status: { status: 'a faire' }, name: 'Sans référence' },
-      environment: clickUpDailyConfig.environments[0],
+      space: SPACES.ROC,
       columns: COLUMNS,
       config: clickUpDailyConfig,
       meUserId: ME,
@@ -119,12 +131,12 @@ test.group('isBug', () => {
 
   test('par nom de liste', ({ assert }) => {
     const task = byRef('ROCND-702')
-    assert.equal(task.taskType, '', 'ce n’est pas le type qui le classe')
+    assert.equal(task.taskType, 'Tâche', 'ce n’est pas le type qui le classe')
     assert.isTrue(task.isBug, 'la liste s’appelle « ROC ND bug maintenance »')
   })
 
   test('par tag et par préfixe de titre', ({ assert }) => {
-    const base = { taskType: '', listName: '', tags: [] as string[], name: 'Quelque chose' }
+    const base = { taskType: 'Tâche', listName: '', tags: [] as string[], name: 'Quelque chose' }
     assert.isTrue(isBug({ ...base, tags: ['Bug'] }, clickUpDailyConfig.bugs))
     assert.isTrue(isBug({ ...base, name: 'BUG : le total est faux' }, clickUpDailyConfig.bugs))
     assert.isFalse(isBug({ ...base, name: 'Debug du calcul' }, clickUpDailyConfig.bugs))
@@ -132,30 +144,5 @@ test.group('isBug', () => {
 
   test('une user story ordinaire n’est pas un bug', ({ assert }) => {
     assert.isFalse(byRef('ROC-1802').isBug)
-  })
-})
-
-test.group('isBacklog', () => {
-  test('écarte une tâche « nouveau » dans un dossier Backlog', ({ assert }) => {
-    assert.isTrue(isBacklog(byRef('ROCND-703'), clickUpDailyConfig.backlog))
-  })
-
-  test('garde une tâche déjà priorisée du même dossier', ({ assert }) => {
-    const task = byRef('ROCND-701')
-    assert.equal(task.status, 'a faire')
-    assert.isFalse(isBacklog(task, clickUpDailyConfig.backlog), 'seul « nouveau » est écarté')
-  })
-
-  test('garde la mienne malgré le dossier Backlog', ({ assert }) => {
-    const mine = { ...byRef('ROCND-703'), isMine: true }
-    assert.isFalse(isBacklog(mine, clickUpDailyConfig.backlog))
-    assert.isTrue(
-      isBacklog(mine, { ...clickUpDailyConfig.backlog, keepMine: false }),
-      'sauf si keepMine est désactivé'
-    )
-  })
-
-  test('vider les statuts désactive le filtre', ({ assert }) => {
-    assert.isFalse(isBacklog(byRef('ROCND-703'), { ...clickUpDailyConfig.backlog, statuses: [] }))
   })
 })

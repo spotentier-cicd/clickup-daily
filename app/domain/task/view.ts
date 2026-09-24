@@ -3,13 +3,16 @@ import { isBug } from '#domain/rules/bugs'
 import { columnFor } from '#domain/task/columns'
 import { customFieldValue } from '#domain/task/custom_fields'
 import { asInt, daysAgo, formatDurationMs, msToDateTime } from '#domain/time'
-import type { Column, CustomFieldValue, RawTask, TaskView } from '#domain/task/types'
-import type { ClickUpDailyConfig, EnvironmentConfig } from '#domain/config/types'
+import type { Column, ColumnMapping, CustomFieldValue, RawTask, TaskView } from '#domain/task/types'
+import type { ClickUpDailyConfig } from '#domain/config/types'
 
 export interface ToTaskViewOptions {
   raw: RawTask
-  environment: EnvironmentConfig
+  /** L'espace ClickUp d'où vient la tâche : son identifiant et son nom. */
+  space: { key: string; label: string }
   columns: Column[]
+  /** Rattachement statut → colonne choisi dans /parametres. */
+  mapping?: ColumnMapping
   config: ClickUpDailyConfig
   meUserId: number
   now: DateTime
@@ -20,16 +23,16 @@ export interface ToTaskViewOptions {
 /**
  * Normalise une tâche brute de l'API.
  *
- * Renvoie null quand le statut n'appartient à aucune colonne : la tâche est
- * alors hors périmètre et n'entre pas dans le rapport.
+ * Ne renvoie jamais null : depuis que les statuts se choisissent liste par
+ * liste, un statut que le workflow ne connaît pas n'est plus une anomalie à
+ * écarter mais un choix assumé — il atterrit dans la colonne « Autres ».
  */
-export function toTaskView(options: ToTaskViewOptions): TaskView | null {
-  const { raw, environment, columns, config, meUserId, now, taskTypeNames } = options
+export function toTaskView(options: ToTaskViewOptions): TaskView {
+  const { raw, space, columns, mapping, config, meUserId, now, taskTypeNames } = options
   const zone = config.timezone
 
   const status = raw.status?.status ?? ''
-  const column = columnFor(status, columns)
-  if (!column) return null
+  const column = columnFor(status, columns, mapping)
 
   const assignees = raw.assignees ?? []
   const assigneeIds = assignees
@@ -55,8 +58,8 @@ export function toTaskView(options: ToTaskViewOptions): TaskView | null {
     ref: String(raw.custom_id || raw.id || ''),
     name: (raw.name ?? '').trim() || '(sans titre)',
     url: raw.url || `https://app.clickup.com/t/${raw.id}`,
-    envKey: environment.key,
-    envLabel: environment.label || environment.key,
+    envKey: space.key,
+    envLabel: space.label || space.key,
     status,
     column: column.key,
     columnLabel: column.label,
@@ -66,7 +69,9 @@ export function toTaskView(options: ToTaskViewOptions): TaskView | null {
     assigneeIds,
     isMine: assigneeIds.includes(meUserId),
     tags: (raw.tags ?? []).map((t) => t.name ?? '').filter(Boolean),
+    listId: String(raw.list?.id ?? ''),
     listName: raw.list?.name ?? '',
+    folderId: String(raw.folder?.id ?? ''),
     folderName: raw.folder?.name ?? '',
     parent: raw.parent ?? null,
     due,
@@ -78,7 +83,7 @@ export function toTaskView(options: ToTaskViewOptions): TaskView | null {
     myTimeMs: 0,
     customFields,
     description: (raw.text_content ?? raw.description ?? '').trim(),
-    taskType: resolveTaskType(raw.custom_item_id, taskTypeNames),
+    taskType: typeLabel(raw.custom_item_id, taskTypeNames),
     isBug: false,
     staleDays: daysAgo(updated, now),
     isOverdue,
@@ -90,16 +95,19 @@ export function toTaskView(options: ToTaskViewOptions): TaskView | null {
 }
 
 /**
- * custom_item_id vaut 0 (ou rien) pour une tâche ordinaire ; seuls les autres
- * types — User Story, EPIC, Bug, Feature — portent un libellé.
+ * Le libellé du type ClickUp.
+ *
+ * custom_item_id est absent ou nul pour une tâche ordinaire ; seuls les autres
+ * types — User Story, EPIC, Bug… — portent un nom dans le workspace.
  */
-function resolveTaskType(
+function typeLabel(
   customItemId: number | string | null | undefined,
-  taskTypeNames?: Map<number, string>
+  names?: Map<number, string>
 ): string {
-  if (customItemId === null || customItemId === undefined) return ''
-  if (customItemId === 0 || customItemId === '0') return ''
+  if (customItemId === null || customItemId === undefined || customItemId === '') return 'Tâche'
 
   const id = asInt(customItemId)
-  return taskTypeNames?.get(id) ?? ''
+  if (id === 0) return 'Tâche'
+
+  return names?.get(id) || `Type ${id}`
 }

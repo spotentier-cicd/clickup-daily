@@ -4,11 +4,11 @@ import type { ClickUpDailyConfig } from '#domain/config/types'
 /*
 | Règles que les types ne savent pas exprimer.
 |
-| Le typecheck attrape une clé inconnue ou mal typée. Il ne dit rien d'un statut
-| ajouté dans un environnement mais oublié dans les colonnes — la tâche
-| disparaîtrait alors du tableau sans un mot. C'est le genre d'erreur que cette
-| fonction rend impossible à ignorer : elle est appelée au démarrage et fait
-| échouer le boot, pas le run du matin.
+| Le typecheck attrape une clé inconnue ou mal typée. Il ne dit rien de deux
+| colonnes qui revendiquent le même statut — le classement d'une tâche
+| deviendrait indéterminé, et le tableau mentirait en silence. C'est le genre
+| d'erreur que cette fonction rend impossible à ignorer : elle est appelée au
+| démarrage et fait échouer le boot, pas le run du matin.
 */
 
 function duplicates(values: string[]): string[] {
@@ -24,22 +24,6 @@ function duplicates(values: string[]): string[] {
 export function checkConfigInvariants(config: ClickUpDailyConfig): string[] {
   const problems: string[] = []
 
-  /* Environnements */
-  if (config.environments.length === 0) {
-    problems.push('environments est vide : aucun espace ClickUp à interroger.')
-  }
-  for (const key of duplicates(config.environments.map((e) => e.key))) {
-    problems.push(`environments : la clé "${key}" est utilisée deux fois.`)
-  }
-  for (const env of config.environments) {
-    if (!env.spaceId.trim()) {
-      problems.push(`environments.${env.key} : space_id manquant.`)
-    }
-    if (env.statuses.length === 0) {
-      problems.push(`environments.${env.key} : aucun statut listé.`)
-    }
-  }
-
   /* Colonnes */
   if (config.columns.length === 0) {
     problems.push('columns est vide : le tableau n’aurait aucune colonne.')
@@ -49,36 +33,24 @@ export function checkConfigInvariants(config: ClickUpDailyConfig): string[] {
   }
 
   /*
-   * Le cœur du contrôle : tout statut ramené de ClickUp doit atterrir dans une
-   * colonne, et dans une seule.
+   * « autres » est la colonne d'accueil des statuts hors workflow, ajoutée par
+   * buildColumns. Une colonne configurée qui prendrait cette clé la masquerait,
+   * et les tâches sans étape disparaîtraient du tableau.
    */
-  for (const env of config.environments) {
-    for (const status of env.statuses) {
-      const matching = config.columns.filter((c) =>
-        c.match.some((m) => normalize(m) === normalize(status))
-      )
-      if (matching.length === 0) {
-        problems.push(
-          `Le statut "${status}" (${env.key}) n’est repris par aucune colonne : ` +
-            'les tâches dans ce statut seraient collectées puis absentes du tableau.'
-        )
-      } else if (matching.length > 1) {
-        problems.push(
-          `Le statut "${status}" (${env.key}) est repris par ${matching.length} colonnes ` +
-            `(${matching.map((c) => c.key).join(', ')}) : le classement serait ambigu.`
-        )
-      }
-    }
+  if (config.columns.some((column) => normalize(column.key) === 'autres')) {
+    problems.push('columns : la clé "autres" est réservée à la colonne des statuts hors workflow.')
   }
 
-  /* Une colonne qui ne correspond à rien est du bruit, pas une erreur fatale. */
-  const configuredStatuses = new Set(
-    config.environments.flatMap((e) => e.statuses).map((s) => normalize(s))
-  )
+  /*
+   * Les statuts ne sont plus en configuration — ils sont découverts et
+   * rattachés dans /parametres. Reste à vérifier que chaque colonne garde de
+   * quoi se faire proposer : sans indice, elle n'attrapera jamais un statut
+   * d'un workspace qu'on ne connaît pas encore.
+   */
   for (const column of config.columns) {
-    if (!column.match.some((m) => configuredStatuses.has(normalize(m)))) {
+    if (column.hints.length === 0) {
       problems.push(
-        `La colonne "${column.key}" ne correspond à aucun statut configuré : elle restera toujours vide.`
+        `columns.${column.key} : aucun indice, la colonne ne sera jamais proposée sur un workspace inconnu.`
       )
     }
   }

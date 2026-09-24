@@ -6,24 +6,23 @@
 | besoin en paramètre, elles ne vont jamais les chercher elles-mêmes.
 */
 
-/** Un espace ClickUp interrogé, avec les statuts exacts à en ramener. */
-export interface EnvironmentConfig {
-  key: string
-  label: string
-  spaceId: string
-  /**
-   * Noms de statuts tels qu'ils existent dans ClickUp. Attention : ils sont
-   * sans accents dans ce workspace, et ROC dit « revue ok » là où Tempo dit
-   * « revue de code ok ».
-   */
-  statuses: string[]
-}
-
-/** Une colonne du tableau, qui regroupe un ou plusieurs statuts. */
+/**
+ * Une colonne du tableau : une étape du workflow, pas un statut ClickUp.
+ *
+ * Les statuts, eux, varient d'un workspace à l'autre — « in progress » ici,
+ * « dev en cours » là. Ils ne sont donc PAS écrits en configuration : la page
+ * de paramétrage les découvre et les rattache à une colonne.
+ *
+ * `hints` ne sert qu'à proposer ce rattachement au premier passage : des
+ * fragments de mots, français et anglais, qu'on cherche dans le nom du statut.
+ * C'est ce qui fait qu'un workspace inconnu s'affiche correctement sans qu'on
+ * ait rien réglé — la proposition reste modifiable, et le choix explicite
+ * l'emporte toujours.
+ */
 export interface ColumnConfig {
   key: string
   label: string
-  match: string[]
+  hints: string[]
   color: string
 }
 
@@ -43,15 +42,6 @@ export interface BugsConfig {
   listNameContains: string[]
   tags: string[]
   namePrefixes: string[]
-}
-
-/** Tâches écartées du rapport parce qu'elles n'ont pas été priorisées. */
-export interface BacklogConfig {
-  statuses: string[]
-  folderNameContains: string[]
-  listNameContains: string[]
-  /** Garder malgré tout celles qui me sont assignées. */
-  keepMine: boolean
 }
 
 export interface BlockersConfig {
@@ -121,15 +111,10 @@ export interface VeilleConfig {
 }
 
 export interface ClickUpDailyConfig {
-  workspaceId: string
   timezone: string
-  /** Identifiant ClickUp ; normalement redéterminé via le token, sert de secours. */
-  meUserId: number
-  environments: EnvironmentConfig[]
   columns: ColumnConfig[]
   enrich: EnrichConfig
   bugs: BugsConfig
-  backlog: BacklogConfig
   /** Seuil de la section « en cours mais sans activité ». */
   staleAfterDays: number
   blockers: BlockersConfig

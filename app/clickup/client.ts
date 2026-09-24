@@ -1,5 +1,6 @@
 import { ClickUpError } from '#clickup/errors'
 import { RateLimiter, sleep } from '#clickup/rate_limiter'
+import type { FolderInfo, ListInfo, SpaceInfo, SpaceTree } from '#domain/scope'
 import type { RawTask } from '#domain/task/types'
 import type { RawComment } from '#domain/mention/comments'
 import type { RawTimeEntry } from '#domain/rules/pointage'
@@ -110,6 +111,21 @@ export class ClickUpClient {
     )
   }
 
+  /**
+   * Les équipes (workspaces) auxquelles le jeton donne accès.
+   *
+   * C'est le premier appel de toute la chaîne : sans identifiant d'équipe
+   * écrit nulle part, c'est le jeton qui dit où l'on travaille.
+   */
+  async teams(): Promise<{ id: string; name: string }[]> {
+    const data = await this.get<{ teams?: { id?: string | number; name?: string }[] }>('/team')
+
+    return (data.teams ?? []).map((team) => ({
+      id: String(team.id ?? ''),
+      name: team.name ?? '',
+    }))
+  }
+
   async me(): Promise<{ id?: number; username?: string }> {
     const data = await this.get<{ user?: { id?: number; username?: string } }>('/user')
     return data.user ?? {}
@@ -133,15 +149,64 @@ export class ClickUpClient {
     }
   }
 
-  /** Toutes les tâches d'un espace dans les statuts donnés, pagination comprise. */
-  async teamTasks(teamId: string, spaceId: string, statuses: string[]): Promise<RawTask[]> {
+  /**
+   * Les espaces du workspace.
+   *
+   * C'est ce qui remplace la liste d'espaces écrite à la main : l'API dit
+   * lesquels existent, la page de paramétrage dit ce qu'on y suit.
+   */
+  async spaces(teamId: string): Promise<SpaceInfo[]> {
+    const data = await this.get<{
+      spaces?: { id?: string | number; name?: string; private?: boolean }[]
+    }>(`/team/${teamId}/space`, { archived: false })
+
+    return (data.spaces ?? []).map((space) => ({
+      id: String(space.id ?? ''),
+      name: space.name ?? '',
+      private: Boolean(space.private),
+    }))
+  }
+
+  /**
+   * Les dossiers et les listes d'un espace, avec les statuts de chaque liste.
+   *
+   * Deux appels : ClickUp range les listes sans dossier ailleurs que celles
+   * qui en ont un, et il n'existe pas d'endpoint qui rende les deux.
+   */
+  async spaceTree(space: SpaceInfo): Promise<SpaceTree> {
+    const [folders, lists] = await Promise.all([
+      this.get<{ folders?: RawFolder[] }>(`/space/${space.id}/folder`, { archived: false }),
+      this.get<{ lists?: RawList[] }>(`/space/${space.id}/list`, { archived: false }),
+    ])
+
+    return {
+      space,
+      folders: (folders.folders ?? []).map((folder): FolderInfo => ({
+        id: String(folder.id ?? ''),
+        name: folder.name ?? '',
+        lists: (folder.lists ?? []).map(toListInfo),
+      })),
+      lists: (lists.lists ?? []).map(toListInfo),
+    }
+  }
+
+  /**
+   * Toutes les tâches des listes données, dans les statuts donnés.
+   *
+   * L'API accepte plusieurs `list_ids` par requête : dix listes coûtent donc
+   * la même pagination qu'une seule. C'est ce qui permet de n'interroger que
+   * ce qui est coché, plutôt que des espaces entiers dont on jetterait
+   * ensuite les neuf dixièmes.
+   */
+  async teamTasks(teamId: string, listIds: string[], statuses: string[]): Promise<RawTask[]> {
+    if (listIds.length === 0 || statuses.length === 0) return []
     const tasks: RawTask[] = []
 
     for (let page = 0; page <= 50; page++) {
       const data = await this.get<{ tasks?: RawTask[]; last_page?: boolean }>(
         `/team/${teamId}/task`,
         {
-          space_ids: [spaceId],
+          list_ids: listIds,
           statuses,
           subtasks: true,
           include_closed: true,
@@ -152,12 +217,12 @@ export class ClickUpClient {
 
       const batch = data.tasks ?? []
       tasks.push(...batch)
-      this.#logger.debug(`espace ${spaceId} page ${page} : ${batch.length} tâches`)
+      this.#logger.debug(`page ${page} : ${batch.length} tâches`)
 
       if (data.last_page !== false || batch.length === 0) return tasks
 
       if (page === 50) {
-        this.#logger.warn(`Pagination interrompue à 50 pages pour l'espace ${spaceId}`)
+        this.#logger.warn('Pagination interrompue à 50 pages')
       }
     }
 
@@ -180,6 +245,26 @@ export class ClickUpClient {
       end_date: endMs,
     })
     return data.data ?? []
+  }
+}
+
+interface RawList {
+  id?: string | number
+  name?: string
+  statuses?: { status?: string }[]
+}
+
+interface RawFolder {
+  id?: string | number
+  name?: string
+  lists?: RawList[]
+}
+
+function toListInfo(list: RawList): ListInfo {
+  return {
+    id: String(list.id ?? ''),
+    name: list.name ?? '',
+    statuses: (list.statuses ?? []).map((status) => status.status ?? '').filter(Boolean),
   }
 }
 

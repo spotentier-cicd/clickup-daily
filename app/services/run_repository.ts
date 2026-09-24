@@ -32,7 +32,6 @@ export class RunRepository {
           totalTasks: report.stats.total,
           myTasks: report.stats.mine,
           bugTasks: report.stats.bugs,
-          backlogExcluded: report.stats.backlogExcluded,
           blockers: report.blockers.length,
           weekMs: report.pointage?.weekMs ?? 0,
           payload: JSON.stringify(serializeReport(report)),
@@ -121,6 +120,19 @@ export class RunRepository {
 
     return {
       ...brut,
+      /*
+       * `listId` est arrivé avec le périmètre par listes. Une archive plus
+       * ancienne n'en a pas, et on ne peut pas le deviner : on pose la chaîne
+       * vide, qui veut dire « inconnu ». Le filtre laisse alors passer la
+       * tâche — sinon rouvrir le rapport de la semaine dernière donnerait un
+       * écran vide.
+       */
+      tasks: (brut.tasks ?? []).map((task) => ({
+        ...task,
+        listId: task.listId ?? '',
+        folderId: task.folderId ?? '',
+      })),
+      veille: brut.veille ?? null,
       comments: brut.comments ?? {},
       branches: brut.branches ?? {},
       mentions: brut.mentions ?? [],

@@ -30,6 +30,18 @@ const routes = {
     tokens: [{"old":"/preferences/projects","type":0,"val":"preferences","end":""},{"old":"/preferences/projects","type":0,"val":"projects","end":""}],
     types: placeholder as Registry['preferences.projects']['types'],
   },
+  'settings': {
+    methods: ["GET","HEAD"],
+    pattern: '/parametres',
+    tokens: [{"old":"/parametres","type":0,"val":"parametres","end":""}],
+    types: placeholder as Registry['settings']['types'],
+  },
+  'preferences.scope': {
+    methods: ["PUT"],
+    pattern: '/preferences/scope',
+    tokens: [{"old":"/preferences/scope","type":0,"val":"preferences","end":""},{"old":"/preferences/scope","type":0,"val":"scope","end":""}],
+    types: placeholder as Registry['preferences.scope']['types'],
+  },
 } as const satisfies Record<string, AdonisEndpoint>
 
 export { routes }

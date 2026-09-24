@@ -3,94 +3,73 @@ import type { ClickUpDailyConfig } from '#domain/config/types'
 /*
 | Configuration de clickup-daily.
 |
-| Porté depuis le config.json de la v1. Le « satisfies » garde l'autocomplétion
-| et fait échouer le typecheck sur une clé inconnue ou mal typée ; les règles que
-| les types ne savent pas exprimer (un statut sans colonne, une source de veille
-| dans un groupe inexistant) sont vérifiées au démarrage par checkConfigInvariants.
+| CE FICHIER NE CONTIENT RIEN QUI SOIT PROPRE À UN WORKSPACE. Le jeton suffit :
+| l'utilisateur, l'équipe, les espaces, les dossiers, les listes et leurs
+| statuts sont tous découverts via l'API, et ce qu'on en suit se règle dans
+| /parametres. Ne restent ici que des RÉGLAGES DE PRODUIT — la forme du
+| workflow, les seuils, les sources de veille — qu'on assume d'ouvrir dans un
+| éditeur plutôt que dans une page.
+|
+| Le « satisfies » garde l'autocomplétion et fait échouer le typecheck sur une
+| clé inconnue ; les règles que les types ne savent pas exprimer sont vérifiées
+| au démarrage par checkConfigInvariants.
 */
 const clickUpDailyConfig = {
-  workspaceId: '9015220362',
-  timezone: 'Europe/Paris',
-  meUserId: 106607105,
-  environments: [
-    {
-      key: 'ROC',
-      label: 'ROC',
-      spaceId: '90152348891',
-      statuses: [
-        'nouveau',
-        'a faire',
-        'dev en cours',
-        'revue de code a faire',
-        'revue ok',
-        'deployé sur recette',
-      ],
-    },
-    {
-      key: 'ROCND',
-      label: 'ROC New Deal',
-      spaceId: '901510389524',
-      statuses: [
-        'nouveau',
-        'a faire',
-        'dev en cours',
-        'revue de code a faire',
-        'revue ok',
-        'deployé sur recette',
-      ],
-    },
-    {
-      key: 'TEMPO',
-      label: 'Tempo',
-      spaceId: '90152862404',
-      statuses: [
-        'nouveau',
-        'a faire',
-        'dev en cours',
-        'revue de code a faire',
-        'revue de code ok',
-        'deployé sur recette',
-      ],
-    },
-  ],
+  /*
+   * Le fuseau sert à dater les journées : « hier » et « cette semaine » n'ont
+   * de sens que quelque part. Celui de la machine par défaut, TZ pour forcer.
+   */
+  timezone: process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+
+  /*
+   * Les étapes du workflow, dans l'ordre. Ce sont elles que lisent les règles
+   * de blocage : « attend ma relecture » vise revue_a_faire, « dort sur
+   * recette » vise recette. Renommez les libellés, changez les couleurs — mais
+   * retirer une clé prive la règle correspondante de son objet.
+   *
+   * `hints` sert à deviner, au premier passage, à quelle colonne rattacher un
+   * statut inconnu. Le fragment le plus long l'emporte : « revue ok » gagne
+   * contre « revue ». Tout se corrige ensuite dans /parametres.
+   */
   columns: [
     {
       key: 'nouveau',
       label: 'Nouveau',
-      match: ['nouveau'],
+      hints: ['nouveau', 'new', 'a trier', 'to triage', 'ouvert'],
       color: '#e16b16',
     },
     {
       key: 'a_faire',
       label: 'À faire',
-      match: ['a faire'],
+      hints: ['a faire', 'to do', 'todo', 'ready', 'pret', 'planifie', 'open'],
       color: '#87909e',
     },
     {
       key: 'dev_en_cours',
-      label: 'Dev en cours',
-      match: ['dev en cours'],
+      label: 'En cours',
+      hints: ['en cours', 'in progress', 'doing', 'wip', 'developpement'],
       color: '#5f55ee',
     },
     {
       key: 'revue_a_faire',
-      label: 'Revue de code à faire',
-      match: ['revue de code a faire'],
+      label: 'Revue à faire',
+      hints: ['revue', 'review', 'relecture', 'merge request', 'pull request'],
       color: '#aa8d80',
     },
     {
       key: 'revue_ok',
-      label: 'Revue code OK',
-      match: ['revue ok', 'revue de code ok'],
+      label: 'Revue OK',
+      hints: ['revue ok', 'revue de code ok', 'review ok', 'reviewed', 'approuve', 'approved'],
       color: '#3db88b',
     },
     {
       key: 'recette',
-      label: 'Déployé sur recette',
-      match: ['deploye sur recette'],
+      label: 'Recette',
+      hints: ['recette', 'staging', 'preprod', 'qa', 'uat', 'a tester', 'to test'],
       color: '#f8ae00',
     },
   ],
+
   enrich: {
     comments: true,
     commentsPerTask: 2,
@@ -102,12 +81,6 @@ const clickUpDailyConfig = {
     listNameContains: ['bug'],
     tags: ['bug'],
     namePrefixes: ['bug'],
-  },
-  backlog: {
-    statuses: ['nouveau'],
-    folderNameContains: ['backlog'],
-    listNameContains: [],
-    keepMine: true,
   },
   staleAfterDays: 14,
   blockers: {
@@ -121,17 +94,14 @@ const clickUpDailyConfig = {
     targetHoursPerDay: 7,
     weekDays: [0, 1, 2, 3, 4],
   },
+  /*
+   * Dépôts git locaux à rapprocher des tickets par la référence dans le nom de
+   * branche. Vide par défaut : personne d'autre n'a vos chemins. Un dépôt
+   * introuvable est ignoré sans bruit, la section disparaît alors des cartes.
+   */
   git: {
     enabled: true,
-    repos: [
-      '~/Documents/projects/roc/api',
-      '~/Documents/projects/roc/front',
-      '~/Documents/projects/newdeal/api',
-      '~/Documents/projects/newdeal/front',
-      '~/Documents/projects/tempo/api_tempo',
-      '~/Documents/projects/tempo/front',
-      '~/Documents/projects/dashboard_tempo',
-    ],
+    repos: [] as string[],
     maxBranchesPerTask: 4,
   },
   mentions: {

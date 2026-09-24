@@ -16,7 +16,7 @@ export default function Layout({ children }: { children: ReactElement }) {
 
   return (
     <>
-      <main className="min-h-screen bg-background text-foreground">{children}</main>
+      <main className="min-h-screen">{children}</main>
       <Toaster position="top-center" richColors />
     </>
   )

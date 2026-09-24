@@ -9,9 +9,10 @@ const inertiaConfig = defineConfig({
    * blanche silencieuse. C'est comme ça qu'a été trouvé le plantage sur les
    * archives antérieures à l'ajout de `thresholds` au contrat.
    *
-   * On ne le laisse pas actif en permanence parce que readView() lit
-   * localStorage à l'initialisation de l'état : le serveur rendrait le plateau
-   * fermé alors que le navigateur le sait ouvert, et l'hydratation divergerait.
+   * On ne le laisse pas actif en permanence parce que readTab() et readTheme()
+   * lisent localStorage à l'initialisation de l'état : le serveur rendrait
+   * l'onglet « Aujourd'hui » alors que le navigateur sait qu'on était sur
+   * « Tempo », et l'hydratation divergerait.
    */
   ssr: {
     /**

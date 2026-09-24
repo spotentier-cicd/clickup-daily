@@ -5,6 +5,7 @@ import type { PointageOf } from '#domain/rules/pointage'
 import type { ReportDiffOf } from '#domain/rules/diff'
 import type { GitBranchOf } from '#domain/git/types'
 import type { MentionOf } from '#domain/mention/types'
+import type { VeilleOf } from '#domain/veille/types'
 
 /*
 | LE CONTRAT.
@@ -33,9 +34,12 @@ export type ReportStats = {
   total: number
   mine: number
   bugs: number
-  /** Tâches écartées parce qu'elles dorment au fond d'un backlog. */
-  backlogExcluded: number
-  /** Tâches ramenées dont le statut n'entrait dans aucune colonne. */
+  /**
+   * Tâches ramenées par le filtre commun mais hors du choix de leur liste.
+   *
+   * L'API ne sait filtrer que par une union de statuts ; le tri fin, liste par
+   * liste, se fait ici. Ce compteur dit ce que ce tri a écarté.
+   */
   outOfScope: number
   apiCalls: number
   durationMs: number
@@ -69,6 +73,8 @@ export type ReportOf<D> = {
   mentions: { mention: MentionOf<D>; task: TaskViewOf<D> }[]
   blockers: BlockerOf<D>[]
   pointage: PointageOf<D> | null
+  /** Articles parus dans la fenêtre de veille ; null quand la veille est coupée. */
+  veille: VeilleOf<D> | null
   diff: ReportDiffOf<D>
   stats: ReportStats
   thresholds: ReportThresholds

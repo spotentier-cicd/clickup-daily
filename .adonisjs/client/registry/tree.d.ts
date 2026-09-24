@@ -8,5 +8,7 @@ export interface ApiDefinition {
   refresh: typeof routes['refresh']
   preferences: {
     projects: typeof routes['preferences.projects']
+    scope: typeof routes['preferences.scope']
   }
+  settings: typeof routes['settings']
 }

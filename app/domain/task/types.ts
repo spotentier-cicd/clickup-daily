@@ -29,11 +29,12 @@ export interface RawTask {
   name?: string
   url?: string
   status?: { status?: string }
+  space?: { id?: string | number }
   priority?: { priority?: string } | null
   assignees?: RawUser[]
   tags?: { name?: string }[]
-  list?: { name?: string }
-  folder?: { name?: string }
+  list?: { id?: string | number; name?: string }
+  folder?: { id?: string | number; name?: string }
   parent?: string | null
   due_date?: string | number | null
   date_updated?: string | number | null
@@ -46,15 +47,23 @@ export interface RawTask {
   custom_item_id?: number | string | null
 }
 
-/** Une colonne du tableau, avec ses statuts déjà normalisés. */
+/** Une colonne du tableau, ses indices de rattachement déjà normalisés. */
 export type Column = {
   key: string
   label: string
-  /** Statuts normalisés (minuscules, sans accents). */
-  match: string[]
+  /** Fragments servant à PROPOSER un rattachement, normalisés. */
+  hints: string[]
   color: string
   order: number
 }
+
+/**
+ * Le rattachement statut → colonne, choisi dans /parametres.
+ *
+ * Clé : le statut normalisé. Valeur : une clé de colonne, ou la chaîne vide
+ * pour « aucune étape », qui range la tâche dans « Autres ».
+ */
+export type ColumnMapping = Record<string, string>
 
 export type CustomFieldValue = {
   name: string
@@ -86,7 +95,10 @@ export type TaskViewOf<D> = {
   assigneeIds: number[]
   isMine: boolean
   tags: string[]
+  /** Identifiant ClickUp de la liste : c'est lui que porte le périmètre. */
+  listId: string
   listName: string
+  folderId: string
   folderName: string
   parent: string | null
   due: D | null
@@ -101,6 +113,7 @@ export type TaskViewOf<D> = {
   myTimeMs: number
   customFields: CustomFieldValue[]
   description: string
+  /** Libellé du type ClickUp (« Bug », « EPIC »…), « Tâche » par défaut. */
   taskType: string
   isBug: boolean
   /** Jours depuis la dernière modification. */

@@ -1,11 +1,11 @@
 import type { TaskView } from '#domain/task/types'
-import type { EnvironmentConfig } from '#domain/config/types'
 
 /*
 | Les « projets » affichés.
 |
 | Dans ce workspace, « projet » se lit à deux niveaux :
-|   — l'ESPACE ClickUp (ROC, ROC New Deal, Tempo), qui vient de la configuration ;
+|   — l'ESPACE ClickUp (ROC, ROC New Deal, Tempo), découvert via l'API et
+|     activé dans la page de paramétrage ;
 |   — la LISTE (ROC ND Evol, Tempo CICD Only, Tempo Bug Tracking…), qui est l'endroit
 |     où vivent réellement les domaines de travail, et qu'on ne peut donc pas
 |     déclarer à l'avance : elle se découvre dans les données de chaque run.
@@ -71,12 +71,19 @@ export function defaultPreferences(): ProjectPreferences {
  */
 export function buildProjectCatalog(
   tasks: TaskView[],
-  environments: Pick<EnvironmentConfig, 'key' | 'label'>[]
+  environments: { key: string; label: string }[]
 ): ProjectCatalog {
   const byEnv = new Map<string, ProjectEnvironment>(
     environments.map((environment) => [
       environment.key,
-      { key: environment.key, label: environment.label, total: 0, mine: 0, bugs: 0, lists: [] },
+      {
+        key: environment.key,
+        label: environment.label,
+        total: 0,
+        mine: 0,
+        bugs: 0,
+        lists: [],
+      },
     ])
   )
 

@@ -1,205 +1,357 @@
 @import 'tailwindcss';
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
-/*
----break---
-*/
-@custom-variant dark (&:is(.dark *));
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
 
 /*
----break---
-*/
-@theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: 'Geist Variable', sans-serif;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --color-foreground: var(--foreground);
-  --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
-}
-/*
----break---
+| ——— NOCTURNE ——————————————————————————————————————————————————————————————
+|
+| Les jetons du système de design, repris tels quels de nocturne.css. Le thème
+| SOMBRE est la définition de base : c'est l'état par défaut de la page, et
+| c'est dans cet ordre que le système a été calibré. Le clair est une reprise
+| complète, jamais un ajustement d'opacité.
+|
+| Trois états de thème, et une seule règle pour les trois :
+|   — choix explicite  → [data-theme=light|dark] sur <html>, qui gagne toujours ;
+|   — réglage système  → aucun attribut, et prefers-color-scheme décide.
+| Aucune couleur n'a donc sa seule définition dans un bloc @media : sans ça,
+| un navigateur en mode clair verrait des variables non résolues.
 */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --color-bg: #161826;
+  --color-surface: #232532;
+  --color-text: #e9e9ed;
+  --color-accent: #9184d9;
+  --color-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
+
+  --color-neutral-100: #f3f5fe;
+  --color-neutral-200: #e4e7f5;
+  --color-neutral-300: #cfd3e5;
+  --color-neutral-400: #b2b6ca;
+  --color-neutral-500: #9397ab;
+  --color-neutral-600: #75798c;
+  --color-neutral-700: #595d6c;
+  --color-neutral-800: #3f424d;
+  --color-neutral-900: #292b31;
+
+  --color-accent-100: #f5f4ff;
+  --color-accent-200: #e7e5fe;
+  --color-accent-300: #d2cefd;
+  --color-accent-400: #b5abfc;
+  --color-accent-500: #968ae0;
+  --color-accent-600: #796cbf;
+  --color-accent-700: #5d5294;
+  --color-accent-800: #423a6a;
+  --color-accent-900: #2b2741;
+
+  --shadow-sm: 0 0 0 1px #3f424d;
+  --shadow-md:
+    0 0 0 1px #595d6c, 0 6px 18px rgb(0 0 0 / 0.55);
+  --shadow-lg:
+    0 0 0 1px #9397ab, 0 16px 40px rgb(0 0 0 / 0.65);
+
+  --font-heading: 'Inter Variable', 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter Variable', 'Inter', system-ui, sans-serif;
+  --mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+
+  /*
+  | RÈGLE DE COULEUR : la couleur signale un COÛT, pas une catégorie.
+  | Rouge ce qui bloque, ambre ce qui traîne, vert ce qui est réglé. Un bug est
+  | une catégorie : il se signale par un glyphe. Les quatre gris sont
+  | structurels et se lisent tous sur --color-bg comme sur --color-surface.
+  */
+  --red: oklch(0.72 0.14 22);
+  --amber: oklch(0.8 0.12 78);
+  --green: oklch(0.76 0.11 160);
+  --muted: color-mix(in srgb, var(--color-text) 62%, transparent);
+  --faint: color-mix(in srgb, var(--color-text) 42%, transparent);
+  --soft: color-mix(in srgb, var(--color-text) 5%, transparent);
+
+  /* La teinte qui dit « c'est à moi », assez pâle pour passer sous du texte. */
+  --mine: color-mix(in srgb, var(--color-accent) 9%, var(--color-surface));
+  --ref: var(--color-accent-300);
+  --tint: var(--color-accent-900);
+  --tint-ink: var(--color-accent-200);
+  --prio-n: var(--color-neutral-800);
+
+  /*
+  | Les espaces ClickUp n'ont pas de couleur en configuration : cinq teintes
+  | fixes leur sont distribuées dans l'ordre, ce qui donne la même couleur au
+  | même espace d'un jour à l'autre sans rien avoir à déclarer.
+  */
+  --env-1: oklch(0.76 0.09 245);
+  --env-2: oklch(0.76 0.09 305);
+  --env-3: oklch(0.78 0.09 185);
+  --env-4: oklch(0.78 0.1 95);
+  --env-5: oklch(0.75 0.1 25);
+
+  color-scheme: dark;
 }
-/*
----break---
-*/
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+
+:root[data-theme='light'] {
+  --color-bg: #eceef6;
+  --color-surface: #f7f8fc;
+  --color-text: #25272e;
+  --color-accent: #6a5db3;
+  --color-divider: rgb(37 39 46 / 0.14);
+  --shadow-sm: 0 0 0 1px #d8dbe7;
+  --shadow-md:
+    0 0 0 1px #c6cadb, 0 6px 18px rgb(37 39 46 / 0.1);
+  --shadow-lg:
+    0 0 0 1px #b2b6ca, 0 16px 40px rgb(37 39 46 / 0.16);
+  --red: oklch(0.55 0.17 25);
+  --amber: oklch(0.58 0.13 65);
+  --green: oklch(0.52 0.12 160);
+  --ref: #5d5294;
+  --tint: #e7e5fe;
+  --tint-ink: #423a6a;
+  --prio-n: #cfd3e5;
+  --env-1: oklch(0.52 0.11 245);
+  --env-2: oklch(0.52 0.12 305);
+  --env-3: oklch(0.52 0.09 185);
+  --env-4: oklch(0.54 0.1 95);
+  --env-5: oklch(0.52 0.14 25);
+
+  color-scheme: light;
 }
-/*
----break---
-*/
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --color-bg: #eceef6;
+    --color-surface: #f7f8fc;
+    --color-text: #25272e;
+    --color-accent: #6a5db3;
+    --color-divider: rgb(37 39 46 / 0.14);
+    --shadow-sm: 0 0 0 1px #d8dbe7;
+    --shadow-md:
+      0 0 0 1px #c6cadb, 0 6px 18px rgb(37 39 46 / 0.1);
+    --shadow-lg:
+      0 0 0 1px #b2b6ca, 0 16px 40px rgb(37 39 46 / 0.16);
+    --red: oklch(0.55 0.17 25);
+    --amber: oklch(0.58 0.13 65);
+    --green: oklch(0.52 0.12 160);
+    --ref: #5d5294;
+    --tint: #e7e5fe;
+    --tint-ink: #423a6a;
+    --prio-n: #cfd3e5;
+    --env-1: oklch(0.52 0.11 245);
+    --env-2: oklch(0.52 0.12 305);
+    --env-3: oklch(0.52 0.09 185);
+    --env-4: oklch(0.54 0.1 95);
+    --env-5: oklch(0.52 0.14 25);
+
+    color-scheme: light;
   }
 }
 
 /*
-| ——— Jetons propres au tableau de bord ————————————————————————————————————
-|
-| RÈGLE DE COULEUR : la couleur signale un COÛT, jamais une CATÉGORIE.
-| Trois teintes sémantiques, deux structurelles, et rien d'autre. Un bug est
-| une catégorie : il se signale par un glyphe, pas par du rouge.
-|
-| Pourquoi --urgent alors que --destructive existe : --destructive est calibré
-| comme FOND de bouton avec du texte clair dessus (≈4:1 sur blanc). --urgent
-| est calibré comme couleur de TEXTE et de FILET sur --background, et doit donc
-| tenir 4,5:1 à 11 px. On n'écrit jamais en --destructive sur cette page.
-|
-| Pourquoi --rule alors que --border existe : en sombre --border vaut
-| oklch(1 0 0 / 10%). Une page sans cartes ni ombres repose entièrement sur ses
-| filets ; un border-border/60 y atterrirait à 6 % de blanc, donc invisible.
-| Corollaire : on n'empile jamais un modificateur d'opacité sur une couleur
-| déjà alpha. Partout : border-rule / divide-rule.
+| Les jetons gardent les noms de nocturne.css, sans passer par @theme : les
+| enregistrer comme couleurs Tailwind produirait --color-surface: var(--color-surface),
+| une définition circulaire. Le balisage les lit donc en valeur arbitraire —
+| text-[var(--muted)], bg-[var(--color-surface)] — ce qui garde une seule
+| orthographe entre la feuille de style, le balisage et le système d'origine.
 */
-:root {
-  --urgent: oklch(0.52 0.2 27);
-  --attention: oklch(0.52 0.12 70);
-  --ok: oklch(0.5 0.11 158);
-  --rule: oklch(0.915 0 0);
-  --surface-urgent: oklch(0.968 0.022 27);
-}
-
-.dark {
-  --urgent: oklch(0.72 0.17 25);
-  --attention: oklch(0.8 0.13 78);
-  --ok: oklch(0.74 0.13 158);
-  --rule: oklch(1 0 0 / 14%);
-  --surface-urgent: oklch(0.255 0.048 25);
-}
-
 @theme inline {
-  --color-urgent: var(--urgent);
-  --color-attention: var(--attention);
-  --color-ok: var(--ok);
-  --color-rule: var(--rule);
-  --color-surface-urgent: var(--surface-urgent);
+  --font-sans: var(--font-body);
+  --font-mono: var(--mono);
 }
 
-/*
-| ÉCHELLE TYPOGRAPHIQUE : cinq crans, trois graisses, rien d'autre.
-|
-| Déclarés en jetons pour qu'un text-[12.5px] écrit à la main saute aux yeux en
-| revue. Interdits : text-xs (12 px, le cran mort qui ne se distingue ni de 11
-| ni de 13), text-sm, text-base, la graisse 700 (à cette taille Geist bave),
-| l'italique, et toute taille sous 11 px.
-*/
 @theme {
-  --text-verdict: 1.75rem;
-  --text-verdict--line-height: 1;
-  --text-verdict--letter-spacing: -0.02em;
-  --text-figure: 1.0625rem;
-  --text-figure--line-height: 1;
-  --text-row: 0.9375rem;
-  --text-row--line-height: 1.35;
-  --text-body: 0.8125rem;
-  --text-body--line-height: 1.25rem;
-  --text-label: 0.6875rem;
-  --text-label--line-height: 1rem;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-body);
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--color-accent);
+  }
+
+  summary {
+    cursor: pointer;
+  }
+
+  :focus {
+    outline: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-accent) 30%, transparent);
+  }
+}
+
+/*
+| ——— Composants Nocturne ————————————————————————————————————————————————————
+|
+| Le strict nécessaire, en CSS simple : le tableau de bord n'a besoin que d'un
+| bouton, d'un champ, d'une étiquette et d'un filet.
+*/
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: var(--font-heading);
+    font-weight: 500;
+    font-size: 13.5px;
+    line-height: 1.2;
+    color: var(--color-text);
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 6px 10px;
+    border-radius: var(--radius-md);
+  }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  }
+
+  .btn-secondary {
+    border-color: var(--color-divider);
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-text) 7%, transparent);
+  }
+
+  .btn-ghost {
+    color: var(--color-accent);
+    padding-inline: 4px;
+  }
+
+  .btn-ghost:hover {
+    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  }
+
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+  }
+
+  .input {
+    width: 100%;
+    min-height: 36px;
+    padding: 6px 10px;
+    font: inherit;
+    font-size: 13.5px;
+    color: var(--color-text);
+    caret-color: var(--color-accent);
+    background: var(--color-surface);
+    border: 1px solid var(--color-divider);
+    border-radius: var(--radius-md);
+  }
+
+  .input::placeholder {
+    color: var(--faint);
+  }
+
+  .input:hover {
+    border-color: color-mix(in srgb, var(--color-text) 45%, transparent);
+  }
+
+  .input:focus-visible {
+    border-color: var(--color-accent);
+    outline-offset: 0;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    padding: 3px 7px;
+    border-radius: 6px;
+  }
+
+  .tag-accent {
+    background: var(--color-accent-800);
+    color: var(--color-accent-100);
+  }
+
+  /*
+  | Le filet signature : il s'évanouit sur 48 px à chaque extrémité au lieu de
+  | s'arrêter net. Peint en fond plutôt qu'en bordure, pour pouvoir se poser
+  | sur le haut d'un bloc sans toucher à son modèle de boîte.
+  */
+  .rule {
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      var(--color-divider) 48px,
+      var(--color-divider) calc(100% - 48px),
+      transparent
+    );
+  }
+
+  .rule-top {
+    background: linear-gradient(
+        to right,
+        transparent,
+        var(--color-divider) 32px,
+        var(--color-divider) calc(100% - 32px),
+        transparent
+      )
+      no-repeat top / 100% 1px;
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/*
+| Les états de survol, et eux seuls.
+|
+| Le reste de l'habillage est porté en style en ligne, au plus près du comp
+| dont il est tiré — un survol, lui, ne s'écrit pas en ligne. Ces classes ne
+| peignent donc qu'une chose chacune, sur un élément dont le style de repos
+| est déjà posé ailleurs.
+*/
+@layer components {
+  .hoverable:hover {
+    background: var(--soft);
+  }
+
+  .hoverable-ink:hover {
+    color: var(--color-text);
+  }
+
+  .kpi:hover {
+    box-shadow: 0 0 0 1px var(--color-neutral-600) !important;
+  }
 }

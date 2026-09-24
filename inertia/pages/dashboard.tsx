@@ -1,109 +1,101 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { router } from '@inertiajs/react'
-import { Check, Moon, RefreshCw, Search, ShieldAlert, Sun, SunMoon, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { MoreRow, TaskRow } from '@/components/task_row'
-import { TaskTable } from '@/components/task_table'
-import { ProjectPicker } from '@/components/project_picker'
-import { ChangesInstrument, MentionsInstrument, PointageInstrument } from '@/components/instruments'
-import { matchesSearch, rankFields } from '@/lib/filters'
+import { Link } from '@adonisjs/inertia/react'
+import { WarningCircle } from '@phosphor-icons/react'
+import { Sidebar } from '@/components/sidebar'
+import { Toolbar } from '@/components/toolbar'
+import { ScopePopover } from '@/components/scope_popover'
+import { Synthesis } from '@/components/synthesis'
+import { TaskList } from '@/components/task_list'
+import { TaskDetail } from '@/components/task_detail'
+import { VeilleBoard } from '@/components/veille_board'
+import { columnsOf, dressTask, environmentColors } from '@/lib/board'
+import { followedListIds, followedSpaces } from '#domain/scope'
+import { matchesSearch } from '@/lib/filters'
 import { filterReport, useProjectPreferences } from '@/lib/projects'
-import { buildQueue, plateauOf } from '@/lib/queue'
-import { readView, writeView } from '@/lib/view'
-import { applyTheme, readTheme, type Theme } from '@/lib/theme'
-import { cn } from 'cn'
-import { shortLabels } from '#domain/text'
-import {
-  formatDate,
-  formatDateTime,
-  formatHours,
-  formatLongDate,
-  formatSignedHours,
-} from '@/lib/format'
-import type { FieldUsage, ProjectCatalog, ProjectPreferences } from '@/lib/projects'
-import type { Report } from '@/lib/report'
+import { buildTabs } from '@/lib/tabs'
+import { readTab, writeTab } from '@/lib/view'
+import { applyTheme, nextTheme, readTheme, type Theme } from '@/lib/theme'
+import { formatDateTime } from '@/lib/format'
+import type {
+  FieldUsage,
+  ProjectCatalog,
+  ProjectPreferences,
+  ScopePreferences,
+} from '@/lib/projects'
+import type { Report, VeilleArticle } from '@/lib/report'
+
+/*
+| LE TABLEAU DE BORD.
+|
+| Une colonne de navigation, une barre de commande, et une zone qui change de
+| nature selon l'onglet : la synthèse du matin, une liste de tâches avec son
+| panneau de détail, ou la veille.
+|
+| Tout le filtrage est UNE SEULE cascade, dans cet ordre : le périmètre (côté
+| serveur, persisté), puis la recherche et « mes tâches », puis l'onglet. Les
+| compteurs de la colonne de gauche sont calculés sur l'avant-dernier étage :
+| ils disent donc ce que l'onglet contiendrait si on y allait, ce qui est la
+| seule lecture utile.
+*/
 
 interface DashboardProps {
   report: Report | null
   catalog: ProjectCatalog
   fields: FieldUsage[]
   preferences: ProjectPreferences
+  /** Périmètre réglé dans /parametres : il porte le filtre par type de ticket. */
+  scope: ScopePreferences
   days: { day: string; ranAt: string }[]
   day: string | null
   trigger: string | null
 }
-
-const THEME_ICON = { auto: SunMoon, light: Sun, dark: Moon }
-const THEME_NEXT: Record<Theme, Theme> = { auto: 'light', light: 'dark', dark: 'auto' }
 
 export default function Dashboard({
   report,
   catalog,
   fields,
   preferences,
+  scope,
   days,
   day,
 }: DashboardProps) {
-  const [search, setSearch] = useState('')
-  const [facets, setFacets] = useState<string[]>([])
+  const [tab, setTab] = useState(readTab)
   const [theme, setTheme] = useState<Theme>(readTheme)
-  const [view, setView] = useState(readView)
+  const [search, setSearch] = useState('')
+  const [mineOnly, setMineOnly] = useState(false)
+  const [scopeOpen, setScopeOpen] = useState(false)
+  const [selected, setSelected] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
-  const [pickerOpen, setPickerOpen] = useState(false)
-  const [focusGroup, setFocusGroup] = useState<string | null>(null)
-  const [deployed, setDeployed] = useState<string[]>([])
+  const [elapsed, setElapsed] = useState(0)
+  const [error, setError] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
   const projects = useProjectPreferences(preferences)
 
   useEffect(() => applyTheme(theme), [theme])
-  useEffect(() => writeView(view), [view])
 
-  /* Une seule cascade : périmètre, puis facettes et recherche, puis la file. */
-  const selected = useMemo(
-    () => (report ? filterReport(report, projects.preferences) : null),
-    [report, projects.preferences]
-  )
+  /*
+   * Le compteur de collecte : un rafraîchissement peut durer cinq secondes, et
+   * un bouton qui ne dit rien pendant ce temps passe pour un bouton cassé. La
+   * remise à zéro se fait au départ de la requête, pas ici : un setState nu
+   * dans un effet déclenche un rendu en cascade.
+   */
+  useEffect(() => {
+    if (!refreshing) return
 
-  const visible = useMemo(() => {
-    if (!selected) return []
-    return selected.tasks.filter(
-      (task) =>
-        (!facets.includes('mine') || task.isMine) &&
-        (!facets.includes('bugs') || task.isBug) &&
-        matchesSearch(task, search)
-    )
-  }, [selected, facets, search])
-
-  const queue = useMemo(() => {
-    if (!report || !selected) return null
-    const blockers = selected.blockers.filter((blocker) =>
-      visible.some((t) => t.id === blocker.task.id)
-    )
-    return buildQueue(
-      { ...report, ...selected, tasks: visible },
-      blockers,
-      selected.diff.since ? formatDate(selected.diff.since) : ''
-    )
-  }, [report, selected, visible])
+    const timer = setInterval(() => setElapsed((seconds) => seconds + 1), 1000)
+    return () => clearInterval(timer)
+  }, [refreshing])
 
   /* Raccourcis : une lettre nue, jamais ⌘P qui est l'impression du navigateur. */
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      const cible = event.target as HTMLElement | null
-      const saisie =
-        cible?.tagName === 'INPUT' || cible?.tagName === 'TEXTAREA' || cible?.isContentEditable
-      if (saisie) {
+      const target = event.target as HTMLElement | null
+      const typing =
+        target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable
+
+      if (typing) {
         if (event.key === 'Escape') setSearch('')
         return
       }
@@ -113,11 +105,9 @@ export default function Dashboard({
         event.preventDefault()
         searchRef.current?.focus()
       } else if (event.key === 'm') {
-        setFacets((f) => (f.includes('mine') ? f.filter((x) => x !== 'mine') : [...f, 'mine']))
+        setMineOnly((only) => !only)
       } else if (event.key === 'p') {
-        setPickerOpen((open) => !open)
-      } else if (event.key === 'b') {
-        setView((v) => ({ ...v, plateauOuvert: !v.plateauOuvert }))
+        setScopeOpen((open) => !open)
       }
     }
 
@@ -125,341 +115,328 @@ export default function Dashboard({
     return () => globalThis.removeEventListener('keydown', onKey)
   }, [])
 
-  if (!report || !selected || !queue) return <EmptyState />
-
-  const ThemeIcon = THEME_ICON[theme]
-  const archive = days.length > 0 && day !== days[0].day
-  const plateau = plateauOf(visible, queue)
-  const filtre = facets.length > 0 || search.length > 0 || selected.hiddenCount > 0
-  const blocages = queue.sections[0].entries.length
-
-  const comptesParColonne = new Map(
-    report.columns.map((column) => [
-      column.key,
-      visible.filter((task) => task.column === column.key).length,
-    ])
+  const envColors = useMemo(
+    () => environmentColors(report?.environments ?? []),
+    [report?.environments]
   )
-  const plusCharge = Math.max(...comptesParColonne.values())
-  const abreges = shortLabels(report.columns.map((column) => column.label))
+
+  /*
+   * Les espaces du rapport que le paramétrage suit encore. Un rapport déjà
+   * collecté peut en contenir d'autres — celui d'avant qu'on décoche Tempo,
+   * ou une archive antérieure au réglage : ils ne s'affichent plus.
+   */
+  const environments = useMemo(() => {
+    const followed = new Set(followedSpaces(scope))
+    return (report?.environments ?? []).filter((env) => followed.has(env.key))
+  }, [report?.environments, scope])
+
+  const scoped = useMemo(
+    () => (report ? filterReport(report, projects.preferences, scope) : null),
+    [report, projects.preferences, scope]
+  )
+
+  const visible = useMemo(() => {
+    if (!scoped) return []
+    return scoped.tasks.filter((task) => (!mineOnly || task.isMine) && matchesSearch(task, search))
+  }, [scoped, mineOnly, search])
+
+  const dressed = useMemo(() => {
+    if (!report) return new Map<string, ReturnType<typeof dressTask>>()
+    const options = { report, fields, preferences: projects.preferences, envColors }
+    return new Map(visible.map((task) => [task.id, dressTask(task, options)]))
+  }, [report, visible, fields, projects.preferences, envColors])
+
+  const tabs = useMemo(
+    () =>
+      buildTabs({
+        visible,
+        environments,
+        envColors,
+        blockers: scoped?.blockers.length ?? 0,
+        veille: report?.veille ?? null,
+      }),
+    [visible, report, environments, envColors, scoped]
+  )
+
+  /* Le panneau de périmètre ne propose que ce qui est suivi. */
+  const followedKeys = new Set(followedSpaces(scope))
+  const visibleCatalog = {
+    environments: catalog.environments.filter((env) => followedKeys.has(env.key)),
+  }
+
+  if (!report || !scoped) return <EmptyState />
+
+  /* Un onglet disparu — la veille coupée, un espace retiré — ne bloque pas la page. */
+  const current = tabs.find((entry) => entry.key === tab) ?? tabs[0]
+  const inTab = current.filter ? visible.filter(current.filter) : []
+  const groups = columnsOf(report.columns, inTab).map((group) => ({
+    column: group.column,
+    tasks: group.tasks.map((task) => dressed.get(task.id)!),
+  }))
+
+  const selectable = groups.flatMap((group) => group.tasks)
+  const shown = selectable.find((entry) => entry.task.id === selected) ?? selectable[0] ?? null
+
+  const articles = report.veille
+    ? report.veille.articles.filter((article) => matchesArticle(article, search))
+    : []
+
+  const go = (key: string) => {
+    setTab(key)
+    writeTab(key)
+    setSelected(null)
+    globalThis.scrollTo({ top: 0 })
+  }
 
   const refresh = () =>
     router.post(
       '/refresh',
       {},
-      { onStart: () => setRefreshing(true), onFinish: () => setRefreshing(false) }
+      {
+        onStart: () => {
+          setElapsed(0)
+          setRefreshing(true)
+          setError(null)
+        },
+        onFinish: () => setRefreshing(false),
+        onError: () => setError('La collecte a échoué — regardez la console du serveur.'),
+      }
     )
-
-  const ouvrirGroupe = (key: string) => {
-    setView((v) => ({ ...v, plateauOuvert: true, regroupement: 'statut' }))
-    setFocusGroup(key)
-    requestAnimationFrame(() =>
-      document
-        .querySelector(`#groupe-${key}`)
-        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    )
-  }
 
   return (
-    <div
-      className="mx-auto w-full max-w-[1400px] px-6"
-      style={{ '--bar-h': '3rem' } as React.CSSProperties}
-    >
-      {/* BANDE 1 — la barre de commande */}
-      <header className="sticky top-0 z-40 -mx-6 flex h-[var(--bar-h)] items-center gap-2 border-b border-rule bg-background/85 px-6 backdrop-blur-md">
-        <span className="text-body font-semibold tracking-tight">clickup-daily</span>
-        <span className="text-body text-muted-foreground first-letter:uppercase">
-          {formatLongDate(report.generatedAt)}
-        </span>
-        {archive && (
-          <span className="rounded bg-muted px-1.5 text-label text-muted-foreground">archive</span>
-        )}
-
-        <div className="ml-auto flex items-center gap-1.5">
-          <div className="relative">
-            <Search className="absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              ref={searchRef}
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Rechercher"
-              className="h-7 w-56 pr-6 pl-7 text-body"
-            />
-            {!search && (
-              <kbd className="absolute top-1/2 right-2 -translate-y-1/2 rounded border border-rule px-1 font-mono text-[10px] text-muted-foreground">
-                /
-              </kbd>
-            )}
-          </div>
-
-          <ToggleGroup type="multiple" size="sm" value={facets} onValueChange={setFacets}>
-            <ToggleGroupItem value="mine" className="h-7 px-2 text-label">
-              Mes tâches
-            </ToggleGroupItem>
-            <ToggleGroupItem value="bugs" className="h-7 px-2 text-label">
-              Bugs
-            </ToggleGroupItem>
-          </ToggleGroup>
-
-          <ProjectPicker
-            catalog={catalog}
-            fields={fields}
-            preferences={projects}
-            hiddenCount={selected.hiddenCount}
-            open={pickerOpen}
-            onOpenChange={setPickerOpen}
-          />
-
-          <PointageInstrument pointage={report.pointage} />
-          <ChangesInstrument diff={selected.diff} />
-          <MentionsInstrument
-            mentions={selected.mentions}
-            lookbackDays={report.thresholds.mentionsLookbackDays}
-          />
-
-          <Separator orientation="vertical" className="h-5" />
-
-          {days.length > 1 && (
-            <Select
-              value={day ?? ''}
-              onValueChange={(value) => {
-                globalThis.location.href = value === days[0].day ? '/' : `/r/${value}`
-              }}
-            >
-              <SelectTrigger className="h-7 w-[7.5rem] text-label">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {days.map((entry) => (
-                  <SelectItem key={entry.day} value={entry.day} className="text-label">
-                    {entry.day}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7"
-            onClick={() => setTheme(THEME_NEXT[theme])}
-            title={`Thème : ${theme}`}
-          >
-            <ThemeIcon className="size-3.5" />
-          </Button>
-
-          <Button size="sm" className="h-7 gap-1.5" disabled={refreshing} onClick={refresh}>
-            <RefreshCw className={cn('size-3.5', refreshing && 'animate-spin')} />
-            {refreshing ? 'Collecte…' : 'Rafraîchir'}
-          </Button>
-        </div>
-      </header>
-
-      {/* BANDE 2 — le verdict */}
-      <section className="flex items-end gap-5 border-b border-rule py-3.5 tabular-nums">
-        <span
-          className={cn('text-verdict font-semibold', blocages > 0 ? 'text-urgent' : 'text-ok')}
-        >
-          {blocages}
-        </span>
-        <div className="min-w-0">
-          <p className="text-label font-semibold tracking-[0.08em] text-muted-foreground uppercase">
-            {blocages > 1 ? 'Blocages' : 'Blocage'}
-          </p>
-          <p className="text-row text-muted-foreground">
-            {blocages === 0 && (
-              <span className="font-medium text-foreground">Rien ne bloque. </span>
-            )}
-            <span className="font-medium text-foreground">{selected.counts.mine}</span> tâches à moi
-            {report.pointage && report.pointage.gapMs > 0 && (
-              <>
-                ,{' '}
-                <span className="font-medium text-foreground">
-                  {formatHours(report.pointage.gapMs)}
-                </span>{' '}
-                à rattraper
-              </>
-            )}
-            .
-          </p>
-        </div>
-
-        {/* La silhouette du flux : le bouchon se voit par le poids, pas par la couleur. */}
-        <div className="ml-auto hidden items-baseline gap-2.5 text-label md:flex">
-          {report.columns.map((column) => {
-            const compte = comptesParColonne.get(column.key) ?? 0
-
-            return (
-              <button
-                key={column.key}
-                type="button"
-                onClick={() => ouvrirGroupe(column.key)}
-                className={cn(
-                  'hover:text-foreground',
-                  compte === plusCharge && compte > 0
-                    ? 'font-medium text-foreground'
-                    : 'text-muted-foreground'
-                )}
-                title={`${column.label} — ${compte}`}
-              >
-                {abreges.get(column.label)} <span className="tabular-nums">{compte}</span>
-              </button>
-            )
-          })}
-        </div>
-      </section>
-
-      {/* BANDE 3 — les filtres actifs, seulement s'il y en a */}
-      {filtre && (
-        <div className="sticky top-[var(--bar-h)] z-30 -mx-6 flex h-8 items-center gap-1.5 border-b border-rule bg-background/85 px-6 backdrop-blur-md">
-          {facets.map((facet) => (
-            <Chip key={facet} onClear={() => setFacets(facets.filter((f) => f !== facet))}>
-              {facet === 'mine' ? 'mes tâches' : 'bugs'}
-            </Chip>
-          ))}
-          {search && <Chip onClear={() => setSearch('')}>« {search} »</Chip>}
-          {selected.hiddenCount > 0 && (
-            <Chip onClear={projects.reset}>périmètre — {selected.hiddenCount} masquées</Chip>
-          )}
-          <span className="ml-1 text-label text-muted-foreground tabular-nums">
-            {report.stats.total} → {visible.length} résultats
-          </span>
-        </div>
-      )}
-
-      {/* BANDE 4 — la file */}
-      <div className="space-y-6 pt-5 tabular-nums">
-        {queue.sections.map((section) => {
-          const tout = deployed.includes(section.key)
-          const montrees = tout ? section.entries : section.entries.slice(0, section.limit)
-          const reste = section.entries.length - montrees.length
-          const urgente = section.key === 'bloque'
-
-          return (
-            <section key={section.key}>
-              <h2 className="flex h-7 items-center gap-2">
-                {urgente ? (
-                  <ShieldAlert className="size-3.5 text-muted-foreground" />
-                ) : (
-                  <Check className="size-3.5 text-muted-foreground" />
-                )}
-                <span className="text-label font-semibold tracking-[0.08em] text-muted-foreground uppercase">
-                  {section.title}
-                </span>
-                {section.entries.length > 0 && (
-                  <span className="text-label text-muted-foreground tabular-nums">
-                    {section.entries.length}
-                  </span>
-                )}
-                <Separator className="flex-1" />
-              </h2>
-
-              <ul
-                className={cn(
-                  'divide-y divide-rule',
-                  urgente &&
-                    section.entries.length > 0 &&
-                    'rounded-r-md border-l-2 border-urgent bg-surface-urgent'
-                )}
-              >
-                {/* L'absence se dit, elle ne s'efface jamais. */}
-                {section.entries.length === 0 && (
-                  <li className="flex h-7 items-center gap-2 text-body text-muted-foreground">
-                    <Check className="size-3.5 text-ok" />
-                    {section.vide}
-                  </li>
-                )}
-
-                {montrees.map((entry, index) => (
-                  <TaskRow
-                    key={entry.task.id}
-                    task={entry.task}
-                    density="file"
-                    rank={index + 1}
-                    reasons={entry.reasons}
-                    tone={entry.tone}
-                    moved={entry.moved}
-                    branches={report.branches[entry.task.id] ?? []}
-                    comments={report.comments[entry.task.id] ?? []}
-                    column={report.columns.find((column) => column.key === entry.task.column)}
-                    fields={rankFields(entry.task, fields, projects.preferences)}
-                    staleAfterDays={report.thresholds.staleAfterDays}
-                    generatedAt={report.generatedAt}
-                  />
-                ))}
-
-                {reste > 0 && (
-                  <MoreRow count={reste} onClick={() => setDeployed([...deployed, section.key])} />
-                )}
-
-                {/* Un filtre ne masque jamais un blocage en silence. */}
-                {urgente && selected.hiddenBlockers.length > 0 && (
-                  <li className="flex h-7 items-center gap-2 px-2.5 text-label text-muted-foreground">
-                    {selected.hiddenBlockers.length} blocage
-                    {selected.hiddenBlockers.length > 1 ? 's' : ''} dans un projet masqué
-                    <button
-                      type="button"
-                      onClick={projects.reset}
-                      className="text-urgent hover:underline"
-                    >
-                      afficher
-                    </button>
-                  </li>
-                )}
-              </ul>
-            </section>
-          )
-        })}
-      </div>
-
-      {/* BANDE 5 — le plateau */}
-      <TaskTable
-        tasks={plateau}
-        columns={report.columns}
-        environments={report.environments}
-        branches={report.branches}
-        comments={report.comments}
+    <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)]">
+      <Sidebar
+        tabs={tabs}
+        active={current.key}
+        onSelect={go}
         generatedAt={report.generatedAt}
-        open={view.plateauOuvert}
-        onOpenChange={(open) => setView((v) => ({ ...v, plateauOuvert: open }))}
-        grouping={view.regroupement}
-        onGroupingChange={(regroupement) => setView((v) => ({ ...v, regroupement }))}
-        focus={focusGroup}
+        me={report.me.name}
+        pointage={report.pointage}
+        days={days}
+        day={day}
+        archive={days.length > 0 && day !== days[0].day}
       />
 
-      {/* BANDE 6 — le colophon */}
-      <footer className="mt-10 border-t border-rule pt-3 pb-8 text-label text-muted-foreground tabular-nums">
-        {report.stats.total} tâches · {report.stats.backlogExcluded} écartées du backlog
-        {report.stats.outOfScope > 0 && ` · ${report.stats.outOfScope} hors colonne`} ·{' '}
-        {selected.mentions.length} mention{selected.mentions.length > 1 ? 's' : ''} sur{' '}
-        {report.thresholds.mentionsLookbackDays} j scrutés
-        {report.pointage && ` · ${formatSignedHours(-report.pointage.gapMs)} de pointage`} ·
-        collecté en {(report.stats.durationMs / 1000).toFixed(1)} s ({report.stats.apiCalls} appels)
-        · {formatDateTime(report.generatedAt)}
-      </footer>
+      <div className="flex min-w-0 flex-col">
+        <Toolbar
+          search={search}
+          onSearch={setSearch}
+          searchRef={searchRef}
+          mineOnly={mineOnly}
+          onMineOnly={() => setMineOnly((only) => !only)}
+          refreshing={refreshing}
+          elapsed={elapsed}
+          onRefresh={refresh}
+          error={error}
+          theme={theme}
+          onTheme={() => setTheme(nextTheme(theme))}
+          scope={
+            <ScopePopover
+              catalog={visibleCatalog}
+              fields={fields}
+              projects={projects}
+              envColors={envColors}
+              hiddenByScope={scoped.hiddenByScope}
+              open={scopeOpen}
+              onOpenChange={setScopeOpen}
+            />
+          }
+        />
+
+        {followedListIds(scope).length === 0 && <NoScopeNotice />}
+        {followedListIds(scope).length > 0 &&
+          report.tasks.length > 0 &&
+          scoped.hiddenByScope === report.tasks.length && <OutOfScopeNotice />}
+
+        {current.key === 'today' && (
+          <Synthesis
+            report={report}
+            scoped={scoped}
+            visible={visible}
+            environments={environments}
+            envColors={envColors}
+            onTab={go}
+            onResetScope={projects.reset}
+          />
+        )}
+
+        <main className="mx-auto w-full max-w-[1760px] px-7 pt-[22px] pb-7">
+          {current.key === 'veille' && report.veille && (
+            <VeilleBoard
+              veille={report.veille}
+              articles={articles}
+              generatedAt={report.generatedAt}
+            />
+          )}
+
+          {current.filter && groups.length === 0 && (
+            <div
+              className="py-16 text-center"
+              style={{ font: '400 14px var(--font-body)', color: 'var(--muted)' }}
+            >
+              Aucune tâche ne correspond.
+            </div>
+          )}
+
+          {current.filter && groups.length > 0 && (
+            <div className="flex flex-wrap items-start gap-[22px]">
+              <TaskList groups={groups} selected={shown?.task.id ?? null} onSelect={setSelected} />
+              {shown && (
+                <TaskDetail
+                  dressed={shown}
+                  column={report.columns.find((column) => column.key === shown.task.column)}
+                />
+              )}
+            </div>
+          )}
+        </main>
+
+        <Legend report={report} />
+      </div>
     </div>
   )
 }
 
-function Chip({ children, onClear }: { children: React.ReactNode; onClear: () => void }) {
+/**
+ * Aucun espace suivi.
+ *
+ * Le tableau continue d'afficher le dernier rapport — un rapport enregistré
+ * reste vrai — mais plus rien ne sera collecté tant que le périmètre est vide.
+ * Sans cette bande, l'écart entre « tout est décoché » et « tout s'affiche »
+ * n'a aucune explication à portée de regard.
+ */
+function NoScopeNotice() {
   return (
-    <span className="flex h-6 items-center gap-1 rounded border border-rule px-1.5 text-label text-muted-foreground">
-      {children}
-      <button type="button" onClick={onClear} className="hover:text-foreground">
-        <X className="size-3" />
-      </button>
+    <div className="mx-auto w-full max-w-[1760px] px-7 pt-4">
+      <div
+        className="flex flex-wrap items-center gap-2 px-[14px] py-3"
+        style={{
+          borderRadius: 8,
+          background: 'color-mix(in srgb, var(--amber) 10%, var(--color-surface))',
+          boxShadow: '0 0 0 1px color-mix(in srgb, var(--amber) 35%, transparent)',
+          font: '400 13px/1.5 var(--font-body)',
+        }}
+      >
+        <WarningCircle size={16} color="var(--amber)" />
+        <span>
+          Aucune liste suivie : ce que vous voyez est le dernier rapport collecté, et la prochaine
+          collecte ne ramènera rien.
+        </span>
+        <Link href="/parametres" style={{ color: 'var(--color-accent)', fontWeight: 500 }}>
+          Choisir les listes
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Le rapport affiché ne contient aucun espace suivi.
+ *
+ * C'est le cas d'une archive antérieure au paramétrage, ou d'un rapport
+ * collecté avant qu'on change d'avis sur les espaces. Un écran vide sans
+ * explication ressemblerait à une panne.
+ */
+function OutOfScopeNotice() {
+  return (
+    <div className="mx-auto w-full max-w-[1760px] px-7 pt-4">
+      <div
+        className="flex flex-wrap items-center gap-2 px-[14px] py-3"
+        style={{
+          borderRadius: 8,
+          background: 'color-mix(in srgb, var(--amber) 10%, var(--color-surface))',
+          boxShadow: '0 0 0 1px color-mix(in srgb, var(--amber) 35%, transparent)',
+          font: '400 13px/1.5 var(--font-body)',
+        }}
+      >
+        <WarningCircle size={16} color="var(--amber)" />
+        <span>
+          Ce rapport ne contient rien du périmètre actuel — il a été collecté avant, ou vous avez
+          décoché ses listes depuis. Lancez une collecte pour le remettre à jour.
+        </span>
+        <Link href="/parametres" style={{ color: 'var(--color-accent)', fontWeight: 500 }}>
+          Paramétrage
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+/** Comment lire une ligne : la légende reste sous les yeux, pas dans un manuel. */
+function Legend({ report }: { report: Report }) {
+  return (
+    <footer className="mx-auto mt-auto flex w-full max-w-[1760px] flex-col gap-[10px] px-7 pt-[18px] pb-9">
+      <div className="rule" />
+      <div
+        className="flex flex-wrap items-center gap-x-5 gap-y-2"
+        style={{ font: '400 12px var(--font-body)', color: 'var(--muted)' }}
+      >
+        <span className="flex items-center gap-[7px]">
+          <span
+            className="size-[14px]"
+            style={{ borderRadius: 4, background: 'var(--mine)', boxShadow: 'var(--shadow-sm)' }}
+          />
+          teinte violette = assignée à vous
+        </span>
+        <span>liseré gauche = priorité</span>
+        <Rail color="var(--red)" label="urgente" />
+        <Rail color="var(--amber)" label="haute" />
+        <Rail color="var(--prio-n)" label="normale" />
+        <span className="flex-1" />
+        <span className="num" style={{ color: 'var(--faint)' }}>
+          {report.stats.total} tâches
+          {report.stats.outOfScope > 0 && ` · ${report.stats.outOfScope} hors périmètre`} · collecté
+          en {(report.stats.durationMs / 1000).toFixed(1)} s ({report.stats.apiCalls} appels) ·{' '}
+          {formatDateTime(report.generatedAt)}
+        </span>
+      </div>
+    </footer>
+  )
+}
+
+function Rail({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="flex items-center gap-[6px]">
+      <span className="h-[14px] w-[3px]" style={{ borderRadius: 2, background: color }} />
+      {label}
     </span>
   )
 }
 
+/** La recherche mord sur ce qui identifie un article, comme sur une tâche. */
+function matchesArticle(article: VeilleArticle, query: string): boolean {
+  const needle = query.trim().toLowerCase()
+  if (!needle) return true
+
+  const haystack = [article.source, article.title, article.summary, ...article.highlights]
+    .join(' ')
+    .toLowerCase()
+
+  return needle.split(/\s+/).every((word) => haystack.includes(word))
+}
+
 function EmptyState() {
   return (
-    <div className="mx-auto max-w-lg px-4 py-24 text-center">
-      <h1 className="text-row font-semibold">clickup-daily</h1>
-      <p className="mt-2 text-body text-muted-foreground">
-        Aucun rapport enregistré pour l’instant. Lancez une collecte :
+    <div className="mx-auto max-w-lg px-6 py-24 text-center">
+      <h1 className="m-0" style={{ font: '500 24px/1.2 var(--font-heading)' }}>
+        Point ClickUp
+      </h1>
+      <p style={{ font: '400 13.5px/1.6 var(--font-body)', color: 'var(--muted)' }}>
+        Aucun rapport enregistré pour l’instant. Choisissez d’abord les espaces à suivre dans le{' '}
+        <Link href="/parametres" style={{ color: 'var(--color-accent)' }}>
+          paramétrage
+        </Link>
+        , puis lancez une collecte :
       </p>
-      <pre className="mt-4 rounded-md border border-rule bg-muted px-3 py-2 text-left text-body">
+      <pre
+        className="px-3 py-2 text-left"
+        style={{
+          borderRadius: 8,
+          background: 'var(--color-surface)',
+          boxShadow: 'var(--shadow-sm)',
+          font: '400 13px var(--mono)',
+        }}
+      >
         node ace daily:report
       </pre>
     </div>

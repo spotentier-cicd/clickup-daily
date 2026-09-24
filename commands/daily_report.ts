@@ -7,6 +7,8 @@ import { ClickUpClient } from '#clickup/client'
 import { ClickUpError } from '#clickup/errors'
 import { ReportBuilder } from '#services/report_builder'
 import { RunRepository } from '#services/run_repository'
+import { PreferencesRepository } from '#services/preferences_repository'
+import { followedListIds } from '#domain/scope'
 import { notify } from '#services/macos_service'
 import { formatDurationMs } from '#domain/time'
 import type { CommandOptions } from '@adonisjs/core/types/ace'
@@ -38,6 +40,9 @@ export default class DailyReport extends BaseCommand {
   @flags.boolean({ description: 'Commentaires sous les cartes (--no-enrich)', default: true })
   declare enrich: boolean
 
+  @flags.boolean({ description: 'Veille technique (--no-veille pour s’en passer)', default: true })
+  declare veille: boolean
+
   @flags.boolean({ description: 'Notification macOS (--no-notify)', default: true })
   declare notify: boolean
 
@@ -48,7 +53,7 @@ export default class DailyReport extends BaseCommand {
   declare trigger: string
 
   @inject()
-  async run(builder: ReportBuilder, runs: RunRepository) {
+  async run(builder: ReportBuilder, runs: RunRepository, preferences: PreferencesRepository) {
     const now = DateTime.now().setZone(config.timezone)
     const triggers: RunTrigger[] = ['scheduled', 'manual', 'refresh']
     const trigger = triggers.includes(this.trigger as RunTrigger)
@@ -63,12 +68,28 @@ export default class DailyReport extends BaseCommand {
 
     const client = new ClickUpClient({ token: env.get('CLICKUP_API_TOKEN').release(), logger })
 
+    /*
+     * Sans périmètre, la collecte ramènerait zéro tâche — et ce rapport vide
+     * deviendrait le plus récent, donc celui qu'affiche le tableau de bord.
+     * On refuse plutôt que d'effacer en silence le dernier rapport valable.
+     */
+    const scope = await preferences.scope()
+    if (followedListIds(scope).length === 0) {
+      this.logger.error(
+        'Aucune liste suivie : ouvrez /parametres et cochez ce qu’on collecte. ' +
+          'Rien n’a été collecté ni enregistré, le dernier rapport reste en place.'
+      )
+      this.exitCode = 1
+      return
+    }
+
     try {
       const previous = await runs.diffReference()
       const report = await builder.build({
         config,
         client,
         logger,
+        scope,
         now,
         previous,
         skip: {
@@ -76,6 +97,7 @@ export default class DailyReport extends BaseCommand {
           git: !this.git,
           mentions: !this.mentions,
           enrich: !this.enrich,
+          veille: !this.veille,
         },
       })
 
