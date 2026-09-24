@@ -115,6 +115,23 @@ const clickUpDailyConfig = {
     keepDays: 30,
     descriptionExcerptChars: 400,
   },
+  /*
+   * Ce que les conversations Claude Code ont coûté, au tarif de l'API.
+   *
+   * Lecture seule des transcriptions locales : aucun appel réseau, et aucun
+   * texte de conversation n'est conservé — seulement les références de tickets
+   * qu'on y trouve.
+   *
+   * Pas d'interrupteur ici : il est dans /parametres, avec les autres réglages
+   * qui se changent sans toucher au code. Deux endroits pour allumer la même
+   * chose, c'est un endroit de trop.
+   */
+  claude: {
+    transcriptsPath: '~/.claude/projects',
+    includeSubagents: true,
+    scanMessageText: true,
+  },
+
   veille: {
     enabled: true,
     maxAgeDays: 10,

@@ -29,6 +29,15 @@ export default class DashboardController {
 
   async #props(run: Run | null, runs: RunRepository, preferences: PreferencesRepository) {
     const report = run ? runs.payloadOf(run) : null
+    const options = await preferences.options()
+
+    /*
+     * L'interrupteur coupe aussi l'affichage de ce qui a déjà été collecté :
+     * sans ça, éteindre le coût des conversations le laisserait à l'écran
+     * jusqu'à la collecte du lendemain. L'archive, elle, garde sa valeur — on
+     * ne réécrit pas le passé pour un réglage d'aujourd'hui.
+     */
+    if (report && !options.claude) report.claude = null
 
     return {
       report,

@@ -17,4 +17,5 @@ export type Mention = Report['mentions'][number]
 export type Branch = Report['branches'][string][number]
 export type Comment = Report['comments'][string][number]
 export type Veille = NonNullable<Report['veille']>
+export type ClaudeUsage = NonNullable<Report['claude']>
 export type VeilleArticle = Veille['articles'][number]

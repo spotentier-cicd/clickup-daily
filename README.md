@@ -64,8 +64,10 @@ son tableau.
 node ace daily:report            # collecte et enregistre le rapport
 node ace daily:report --no-git   # sans les branches locales
 node ace daily:report --no-veille --no-temps --no-mentions --no-enrich
+node ace claude:usage            # coût des conversations Claude Code du mois
+node ace claude:usage --verify   # contrôle la grille tarifaire (voir plus bas)
 npm run dev                      # serveur de développement
-npm run test                     # 134 tests unitaires, base isolée
+npm run test                     # 176 tests unitaires, base isolée
 npm run lint && npm run typecheck
 ```
 
@@ -148,6 +150,7 @@ il porte les réglages de produit :
 | `blockers`, `staleAfterDays` | Les seuils : au bout de combien de jours une revue en souffrance, une tâche sans activité ou une recette qui dort remontent. |
 | `mentions`, `enrich` | Profondeur de balayage des commentaires, plafonnée pour tenir le quota d'appels. |
 | `veille` | Les flux RSS/Atom suivis et les mots-clés de votre stack. |
+| `claude` | Où sont les transcriptions Claude Code, et comment rattacher une conversation à un ticket. L'interrupteur, lui, est dans /parametres. |
 
 Une incohérence dans ce fichier fait échouer le démarrage avec un message
 explicite, pas le rapport du matin.
@@ -160,12 +163,72 @@ explicite, pas le rapport du matin.
 | `CLICKUP_TEAM_ID` | Facultatif. Force l'équipe quand votre jeton en voit plusieurs ; sinon elle se choisit dans /parametres. |
 | `TZ` | Facultatif. Fuseau des journées ; celui de la machine par défaut. |
 | `DB_FILENAME` | Facultatif. Nom du fichier SQLite dans `tmp/`. |
+| `CLAUDE_TRANSCRIPTS_PATH` | Facultatif. Racine des transcriptions Claude Code. `~/.claude/projects` par défaut ; à renseigner en conteneur. |
+
+## Le coût des conversations Claude
+
+Le tableau affiche ce que vos conversations Claude Code ont coûté ce mois-ci, au
+total et ticket par ticket. La case **« Coût des conversations Claude »**, en bas
+de /parametres, l'allume et l'éteint. Elle est **décochée par défaut** : cette
+partie lit des fichiers du dossier personnel, hors du projet, et ça se demande
+plutôt que ça ne se suppose. Décochée, on ne lit plus les transcriptions à la
+collecte et la carte disparaît aussitôt du tableau ; les rapports déjà
+enregistrés gardent leur valeur, recocher suffit à tout retrouver.
+
+**C'est un équivalent, pas une facture.** Un abonnement Claude est à prix fixe :
+rien de ce montant n'est prélevé. Il répond à « qu'est-ce que ça aurait coûté au
+tarif de l'API ? », et c'est une mesure d'effort.
+
+Il n'y a pas d'autre moyen de l'obtenir. L'API d'administration d'Anthropic
+(`/v1/organizations/usage_report`, `/v1/organizations/cost_report`) est réservée
+aux organisations et explicitement fermée aux comptes individuels, et aucun
+endpoint public n'expose la consommation d'un abonnement Pro/Max. La source est
+donc locale : les transcriptions que Claude Code écrit dans `~/.claude/projects`,
+lues en lecture seule.
+
+**Aucun texte de conversation n'est conservé.** Le service y cherche des
+références de tickets et ne garde que celles-ci ; ni les prompts, ni les
+réponses, ni les résultats d'outils n'entrent en base.
+
+### Le rattachement à un ticket
+
+Deux signaux, dans cet ordre :
+
+1. **La branche git** de la conversation. Une branche `feature/ROC-1801-refonte`
+   rattache la journée au ticket ROC-1801.
+2. **Les tickets cités** dans les messages — `ROCND-701`, ou un lien
+   `app.clickup.com/t/…`.
+
+Une référence n'est retenue que si son préfixe existe vraiment dans votre
+workspace : sans ce garde-fou, « GPT-4 » et le segment d'une URL passeraient pour
+des tickets. Une journée qui cite plusieurs tickets partage son montant entre eux
+plutôt que de le compter plusieurs fois.
+
+Travailler sur `main` sans citer de ticket est donc normal, et tombe dans « sans
+ticket identifié ». La carte l'affiche tel quel : mieux vaut un total franchement
+incomplet qu'une imputation inventée.
+
+### Deux limites, mesurables
+
+`node ace claude:usage --verify` les mesure toutes les deux sur vos propres
+données, sans rien envoyer nulle part :
+
+- **La grille tarifaire** est reprise de la documentation publique et datée dans
+  `app/domain/claude/pricing.ts`. La commande lui applique les compteurs de
+  tokens que Claude Code a lui-même écrits, et compare au montant qu'il a
+  facturé : les deux doivent coïncider. Un modèle absent de la grille n'est
+  jamais compté zéro — il s'affiche sur la carte.
+- **La couverture** est d'environ 90 %. Claude Code facture aussi des appels
+  auxiliaires — la génération du titre d'une conversation, en Haiku — qu'il
+  n'inscrit pas comme des réponses dans la transcription. Ils sont donc
+  irrécupérables, et le montant affiché est un plancher.
 
 ## Comment c'est fait
 
 - `app/domain` — les règles, pures, sans I/O, partagées avec le navigateur.
   C'est là que vivent les blocages, le pointage, le diff, le périmètre.
-- `app/services` — la collecte : ClickUp, git local, flux de veille.
+- `app/services` — la collecte : ClickUp, git local, flux de veille,
+  transcriptions Claude Code.
 - `app/controllers` — trois pages : le tableau, le paramétrage, le
   rafraîchissement.
 - `inertia/` — React 19, Inertia, Tailwind v4.

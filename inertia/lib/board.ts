@@ -37,6 +37,8 @@ export interface DressedTask {
   fields: Task['customFields']
   branches: BranchLine[]
   comments: Comment[]
+  /** Équivalent API des conversations Claude rattachées à ce ticket ce mois-ci. */
+  claudeUsd: number
   /** Vrai dès qu'il reste quelque chose à montrer sous la carte. */
   hasDetail: boolean
 }
@@ -97,6 +99,8 @@ export function dressTask(task: Task, options: DressOptions): DressedTask {
   )
   const visibleFields = rankFields(task, fields, preferences, 4)
   const comments = report.comments[task.id] ?? []
+  /* Le rattachement se fait par référence — c'est ce qu'on sait lire d'une branche. */
+  const claudeUsd = report.claude?.byRef[task.ref.toLowerCase()] ?? 0
 
   return {
     task,
@@ -111,6 +115,7 @@ export function dressTask(task: Task, options: DressOptions): DressedTask {
     fields: visibleFields,
     branches,
     comments,
+    claudeUsd,
     hasDetail:
       visibleFields.length > 0 ||
       task.tags.length > 0 ||

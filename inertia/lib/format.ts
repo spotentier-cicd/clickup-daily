@@ -20,6 +20,19 @@ const LONG_DATE = new Intl.DateTimeFormat('fr-FR', {
 const WEEKDAY = new Intl.DateTimeFormat('fr-FR', { weekday: 'short' })
 const SHORT_DATE = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' })
 const TIME = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' })
+/* Le symbole suffit : « $US », que rendrait le format monétaire français, alourdit. */
+const USD = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+/**
+ * Un montant en dollars.
+ *
+ * Sous le cent, la valeur arrondie afficherait « 0,00 $ », ce qui se lit comme
+ * « rien » alors qu'il y a bien eu de la consommation : on écrit « < 0,01 $ ».
+ */
+export function formatUsd(usd: number): string {
+  if (usd > 0 && usd < 0.01) return '< 0,01 $'
+  return `${USD.format(usd)} $`
+}
 
 export function formatDate(iso: string | null): string {
   return iso ? DATE.format(new Date(iso)) : ''

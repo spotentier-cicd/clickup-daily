@@ -6,6 +6,7 @@ import type { ReportDiffOf } from '#domain/rules/diff'
 import type { GitBranchOf } from '#domain/git/types'
 import type { MentionOf } from '#domain/mention/types'
 import type { VeilleOf } from '#domain/veille/types'
+import type { ClaudeUsageOf } from '#domain/claude/types'
 
 /*
 | LE CONTRAT.
@@ -75,6 +76,12 @@ export type ReportOf<D> = {
   pointage: PointageOf<D> | null
   /** Articles parus dans la fenêtre de veille ; null quand la veille est coupée. */
   veille: VeilleOf<D> | null
+  /**
+   * Ce que les conversations Claude Code ont coûté ce mois-ci, au tarif de
+   * l'API. Null quand les transcriptions ne sont pas lisibles — en conteneur
+   * sans montage, par exemple.
+   */
+  claude: ClaudeUsageOf<D> | null
   diff: ReportDiffOf<D>
   stats: ReportStats
   thresholds: ReportThresholds

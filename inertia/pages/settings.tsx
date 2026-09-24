@@ -17,6 +17,7 @@ import { CARD, KICKER } from '@/lib/styles'
 import { formatDateTime } from '@/lib/format'
 import type { Icon } from '@phosphor-icons/react'
 import type { Column, ColumnMapping } from '#domain/task/types'
+import type { AppOptions } from '#domain/options'
 
 /*
 | LA PAGE DE PARAMÉTRAGE.
@@ -70,6 +71,8 @@ interface SettingsProps {
   mapping: ColumnMapping
   teams: { id: string; name: string }[]
   team: string | null
+  /** Ce qui s'allume et s'éteint, hors périmètre ClickUp. */
+  options: AppOptions
   lastRunAt: string | null
   error: string | null
 }
@@ -89,6 +92,7 @@ export default function Settings({
   mapping,
   teams,
   team,
+  options,
   lastRunAt,
   error,
 }: SettingsProps) {
@@ -110,6 +114,7 @@ export default function Settings({
   const [draft, setDraft] = useState<Draft>(initial)
   const [chosenTeam, setChosenTeam] = useState(team)
   const [columnMap, setColumnMap] = useState<ColumnMapping>(mapping)
+  const [claude, setClaude] = useState(options.claude)
   const [saving, setSaving] = useState(false)
 
   /*
@@ -175,7 +180,7 @@ export default function Settings({
   const save = () => {
     router.put(
       '/preferences/scope',
-      { team: chosenTeam, lists: draft, columns: columnMap },
+      { team: chosenTeam, lists: draft, columns: columnMap, options: { claude } },
       {
         preserveScroll: true,
         onStart: () => setSaving(true),
@@ -188,6 +193,7 @@ export default function Settings({
   const changed =
     !sameDraft(initial, draft) ||
     chosenTeam !== team ||
+    claude !== options.claude ||
     JSON.stringify(columnMap) !== JSON.stringify(mapping)
 
   /* Les statuts réellement cochés : ce sont les seuls qui atterrissent quelque part. */
@@ -345,6 +351,38 @@ export default function Settings({
             Compteurs issus de la collecte du {formatDateTime(lastRunAt)}.
           </p>
         )}
+      </div>
+
+      <div className="rule my-6" />
+
+      {/*
+        Ce qui ne vient pas de ClickUp.
+        Coupé, l'interrupteur vaut pour les deux bouts : plus de lecture des
+        transcriptions à la collecte, et la carte disparaît tout de suite du
+        tableau de bord. Les rapports déjà enregistrés gardent leur valeur.
+      */}
+      <div className="flex flex-col gap-3">
+        <span style={KICKER}>Hors ClickUp</span>
+
+        <section style={{ ...CARD, padding: '14px 18px 16px' }} className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => setClaude((value) => !value)}
+            className="flex cursor-pointer items-center gap-[10px] border-0 bg-transparent p-0 text-left"
+          >
+            <Box on={claude} />
+            <span style={{ font: '500 14px var(--font-body)' }}>Coût des conversations Claude</span>
+          </button>
+          <p
+            className="m-0 pl-[27px]"
+            style={{ font: '400 12.5px/1.55 var(--font-body)', color: 'var(--muted)' }}
+          >
+            Décoché, rien n’est lu. Coché, estime au tarif de l’API ce que les conversations du mois
+            ont coûté — au total et ticket par ticket — en dépouillant les transcriptions locales de
+            Claude Code. Rien n’est envoyé nulle part, et aucun texte de conversation n’est
+            conservé. Sur un abonnement, ce montant n’est pas facturé : c’est une mesure d’effort.
+          </p>
+        </section>
       </div>
 
       {/* La barre d'enregistrement suit : un réglage se perd trop facilement. */}

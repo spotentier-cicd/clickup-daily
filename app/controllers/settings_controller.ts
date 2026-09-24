@@ -24,6 +24,8 @@ const scopeValidator = vine.compile(
         seen: vine.array(vine.string()),
       })
     ),
+    /* Les interrupteurs voyagent avec le périmètre : une seule page, un seul envoi. */
+    options: vine.object({ claude: vine.boolean() }),
   })
 )
 
@@ -42,6 +44,7 @@ export default class SettingsController {
   @inject()
   async index({ inertia }: HttpContext, preferences: PreferencesRepository, runs: RunRepository) {
     const scope = await preferences.scope()
+    const options = await preferences.options()
     const columns = buildColumns(config.columns)
 
     const { teams, team, trees, error } = await this.#discover(scope)
@@ -71,6 +74,8 @@ export default class SettingsController {
 
     return inertia.render('settings', {
       error,
+      /* Ce qui s'allume et s'éteint, hors périmètre ClickUp. */
+      options,
       lastRunAt: run?.ranAt.toISO() ?? null,
       teams,
       team: team?.id ?? null,
@@ -99,14 +104,17 @@ export default class SettingsController {
   async update({ request, response, session }: HttpContext, preferences: PreferencesRepository) {
     const payload = await scopeValidator.validate(request.all())
     const saved = await preferences.saveScope(payload)
+    const options = await preferences.saveOptions(payload.options)
 
     const count = Object.keys(saved.lists).length
-    session.flash(
-      'success',
+    const parts = [
       count
         ? `Périmètre enregistré : ${count} liste${count > 1 ? 's' : ''} suivie${count > 1 ? 's' : ''}.`
-        : 'Aucune liste suivie : la prochaine collecte ne ramènera rien.'
-    )
+        : 'Aucune liste suivie : la prochaine collecte ne ramènera rien.',
+    ]
+    if (!options.claude) parts.push('Coût des conversations Claude coupé.')
+
+    session.flash('success', parts.join(' '))
 
     return response.redirect().back()
   }

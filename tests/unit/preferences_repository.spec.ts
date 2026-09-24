@@ -78,3 +78,42 @@ test.group('PreferencesRepository', (group) => {
     })
   })
 })
+
+test.group('PreferencesRepository — les interrupteurs', (group) => {
+  group.each.setup(async () => {
+    await Preference.query().delete()
+  })
+
+  test('tout est éteint tant que rien n’a été coché', async ({ assert }) => {
+    assert.deepEqual(await new PreferencesRepository().options(), { claude: false })
+  })
+
+  test('allumer puis éteindre se relit', async ({ assert }) => {
+    const repository = new PreferencesRepository()
+
+    await repository.saveOptions({ claude: true })
+    assert.deepEqual(await repository.options(), { claude: true })
+
+    await repository.saveOptions({ claude: false })
+    assert.deepEqual(await repository.options(), { claude: false })
+  })
+
+  test('un enregistrement d’avant l’option la trouve éteinte', async ({ assert }) => {
+    /* Sinon l'ajout d'un interrupteur lancerait une collecte que personne n'a demandée. */
+    await Preference.create({ key: 'options', value: '{}' })
+
+    assert.deepEqual(await new PreferencesRepository().options(), { claude: false })
+  })
+
+  test('une valeur illisible n’empêche pas l’ouverture', async ({ assert }) => {
+    await Preference.create({ key: 'options', value: 'pas du json' })
+
+    assert.deepEqual(await new PreferencesRepository().options(), { claude: false })
+  })
+
+  test('seul un vrai explicite allume', async ({ assert }) => {
+    await Preference.create({ key: 'options', value: JSON.stringify({ claude: 'oui' }) })
+
+    assert.deepEqual(await new PreferencesRepository().options(), { claude: false })
+  })
+})

@@ -1,5 +1,5 @@
 import { ArrowUpRight } from '@phosphor-icons/react'
-import { formatDateTime } from '@/lib/format'
+import { formatDateTime, formatUsd } from '@/lib/format'
 import type { CSSProperties } from 'react'
 import type { DressedTask } from '@/lib/board'
 import type { ReportColumn } from '@/lib/report'
@@ -121,6 +121,18 @@ export function TaskDetailContent({ dressed, column }: TaskDetailProps) {
               style={{ color: dressed.time.over ? 'var(--red)' : 'var(--color-text)' }}
             >
               {dressed.time.text}
+            </dd>
+          </>
+        )}
+
+        {dressed.claudeUsd > 0 && (
+          <>
+            <dt style={TERM}>Claude</dt>
+            <dd
+              className="m-0"
+              title="Équivalent au tarif de l’API — non facturé sur un abonnement"
+            >
+              {formatUsd(dressed.claudeUsd)} ce mois-ci
             </dd>
           </>
         )}

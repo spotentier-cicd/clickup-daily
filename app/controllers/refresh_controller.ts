@@ -51,6 +51,7 @@ export default class RefreshController {
     }
 
     try {
+      const options = await preferences.options()
       const now = DateTime.now().setZone(config.timezone)
       const client = new ClickUpClient({
         token: env.get('CLICKUP_API_TOKEN').release(),
@@ -64,6 +65,7 @@ export default class RefreshController {
         scope,
         now,
         previous: await runs.diffReference(now),
+        skip: { claude: !options.claude },
       })
 
       await runs.save(report, 'refresh')

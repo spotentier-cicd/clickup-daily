@@ -22,9 +22,16 @@ x-common: &common
     APP_URL: ${APP_URL:-http://localhost:3333}
     TZ: ${TZ:-Europe/Paris}
     DB_FILENAME: db.sqlite3
+    # Les transcriptions, vues du conteneur (voir le montage ci-dessous).
+    CLAUDE_TRANSCRIPTS_PATH: /claude/projects
   volumes:
-    # La base et le cache de veille. Le seul chemin à persister.
+    # La base et les caches. Le seul chemin à persister.
     - data:/app/tmp
+    # Transcriptions Claude Code, en LECTURE SEULE : c'est la seule source du
+    # coût des conversations, l'API d'Anthropic étant fermée aux comptes
+    # individuels. Rien n'en sort du conteneur, et aucun texte de conversation
+    # n'est conservé. Retirez cette ligne pour vous passer de la carte.
+    - ${CLAUDE_DIR:-${HOME}/.claude}:/claude:ro
     # Dépôts git locaux, si vous voulez rapprocher les branches des tickets :
     # décommentez, et renseignez git.repos dans config/clickup_daily.ts avec
     # les chemins VUS DU CONTENEUR (/repos/…).
@@ -55,6 +62,7 @@ services:
       NODE_ENV: production
       TZ: ${TZ:-Europe/Paris}
       DB_FILENAME: db.sqlite3
+      CLAUDE_TRANSCRIPTS_PATH: /claude/projects
       COLLECT_AT: ${COLLECT_AT:-08:00}
       COLLECT_DAYS: ${COLLECT_DAYS:-1,2,3,4,5}
 

@@ -2,6 +2,7 @@ import {
   ArrowRight,
   ChatsCircle,
   Crosshair,
+  CurrencyDollar,
   Eye,
   GitDiff,
   SignIn,
@@ -12,7 +13,7 @@ import {
 import { WeekCard } from '@/components/week_card'
 import { dressReason } from '@/lib/reasons'
 import { CARD, KICKER, REF } from '@/lib/styles'
-import { formatDateTime, formatHours, formatLongDate, formatTime } from '@/lib/format'
+import { formatDateTime, formatHours, formatLongDate, formatTime, formatUsd } from '@/lib/format'
 import type { Icon } from '@phosphor-icons/react'
 import type { FilteredReport } from '@/lib/projects'
 import type { Report, ReportColumn, Task } from '@/lib/report'
@@ -111,6 +112,15 @@ export function Synthesis({
           },
         ]
       : []),
+    ...(report.claude && report.claude.totalUsd > 0
+      ? [
+          {
+            value: formatUsd(report.claude.totalUsd),
+            label: 'Claude ce mois',
+            onClick: () => globalThis.scrollTo({ top: 0, behavior: 'smooth' as ScrollBehavior }),
+          },
+        ]
+      : []),
   ].filter((kpi) => kpi.value !== 0)
 
   return (
@@ -174,6 +184,9 @@ export function Synthesis({
           lookback={report.thresholds.mentionsLookbackDays}
           onOpenTask={onOpenTask}
         />
+        {report.claude && report.claude.totalUsd > 0 && (
+          <ClaudeCard claude={report.claude} tasks={scoped.tasks} onOpenTask={onOpenTask} />
+        )}
       </div>
 
       {/* Les espaces et leur couleur, une fois, pour que les pastilles se lisent. */}
@@ -665,4 +678,107 @@ function initials(name: string): string {
 /** Un commentaire long se coupe : la carte n'est pas un fil de discussion. */
 function excerpt(text: string): string {
   return text.length > 220 ? `${text.slice(0, 219).trimEnd()}…` : text
+}
+
+/**
+ * Ce que les conversations Claude ont coûté ce mois-ci.
+ *
+ * Le montant est un ÉQUIVALENT au tarif de l'API, reconstitué depuis les
+ * transcriptions locales. L'abonnement est à prix fixe : rien de tout cela
+ * n'est prélevé, et la carte le dit plutôt que de laisser croire à une
+ * facture.
+ *
+ * La part non rattachée est affichée telle quelle. Une conversation menée sur
+ * une branche qui ne cite aucun ticket n'est répartie nulle part — mieux vaut
+ * un total honnêtement incomplet qu'une imputation inventée.
+ */
+function ClaudeCard({
+  claude,
+  tasks,
+  onOpenTask,
+}: {
+  claude: NonNullable<Report['claude']>
+  tasks: Task[]
+  onOpenTask: (id: string) => void
+}) {
+  const byRef = new Map(tasks.map((task) => [task.ref.toLowerCase(), task]))
+  const top = Object.entries(claude.byRef)
+    .map(([ref, usd]) => ({ usd, task: byRef.get(ref) }))
+    .filter((row): row is { usd: number; task: Task } => Boolean(row.task))
+    .slice(0, 5)
+
+  return (
+    <section style={CARD} className="flex flex-col gap-4">
+      <div className="flex items-center gap-2" style={KICKER}>
+        <CurrencyDollar size={15} />
+        Claude ce mois-ci
+      </div>
+
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="num" style={{ font: '500 26px/1 var(--mono)', letterSpacing: '-0.02em' }}>
+          {formatUsd(claude.totalUsd)}
+        </span>
+        {claude.todayUsd > 0 && (
+          <span style={{ font: '400 13px var(--font-body)', color: 'var(--muted)' }}>
+            dont {formatUsd(claude.todayUsd)} aujourd’hui
+          </span>
+        )}
+      </div>
+
+      <p className="m-0" style={{ font: '400 12px/1.5 var(--font-body)', color: 'var(--faint)' }}>
+        Équivalent au tarif de l’API sur {claude.sessions} conversation
+        {claude.sessions > 1 ? 's' : ''}. L’abonnement est à prix fixe : rien n’est facturé.
+        Quelques appels auxiliaires ne sont pas transcrits — c’est un plancher.
+      </p>
+
+      {claude.byModel.length > 0 && (
+        <div className="rule-top flex flex-col gap-[6px] pt-3">
+          {claude.byModel.map((entry) => (
+            <div
+              key={entry.model}
+              className="flex items-baseline justify-between gap-3"
+              style={{ font: '400 12.5px var(--font-body)', color: 'var(--muted)' }}
+            >
+              <span className="truncate">{entry.model.replace(/^claude-/, '')}</span>
+              <span className="num shrink-0" style={{ fontFamily: 'var(--mono)' }}>
+                {formatUsd(entry.usd)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {top.length > 0 && (
+        <div className="rule-top flex flex-col gap-[6px] pt-3">
+          <div style={{ font: '500 12px var(--font-body)', color: 'var(--muted)' }}>
+            Rattaché à un ticket
+          </div>
+          {top.map(({ task, usd }) => (
+            <TitleLine key={task.id} task={task} trailing={formatUsd(usd)} onOpen={onOpenTask} />
+          ))}
+        </div>
+      )}
+
+      {claude.unattributedUsd > 0 && (
+        <div
+          className="flex items-baseline justify-between gap-3"
+          style={{ font: '400 12.5px var(--font-body)', color: 'var(--faint)' }}
+        >
+          <span>Sans ticket identifié</span>
+          <span className="num shrink-0" style={{ fontFamily: 'var(--mono)' }}>
+            {formatUsd(claude.unattributedUsd)}
+          </span>
+        </div>
+      )}
+
+      {claude.unknownModels.length > 0 && (
+        <p
+          className="m-0"
+          style={{ font: '400 12px/1.45 var(--font-body)', color: 'var(--amber)' }}
+        >
+          Hors total, tarif inconnu : {claude.unknownModels.join(', ')}
+        </p>
+      )}
+    </section>
+  )
 }

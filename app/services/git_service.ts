@@ -4,13 +4,12 @@ import { execFile } from 'node:child_process'
 import { basename, dirname, join, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import { DateTime } from 'luxon'
+import { refsIn } from '#domain/task/ref'
 import type { GitBranch } from '#domain/git/types'
 import type { GitConfig } from '#domain/config/types'
 
 const run = promisify(execFile)
 
-/** ROC-180 ne doit pas capturer ROC-1801 : la borne est posée à l'usage. */
-const BRANCH_REF = /[A-Za-z][A-Za-z0-9]{1,9}-\d{1,6}/g
 const TRACK = /(ahead|behind) (\d+)/g
 
 export interface GitServiceLogger {
@@ -48,8 +47,7 @@ export class GitService {
 
     for (const path of paths) {
       for (const branch of await this.#readBranches(path, labels.get(path)!, zone, logger)) {
-        for (const token of branch.name.match(BRANCH_REF) ?? []) {
-          const key = token.toLowerCase()
+        for (const key of refsIn(branch.name)) {
           index.set(key, [...(index.get(key) ?? []), branch])
         }
       }

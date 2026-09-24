@@ -43,6 +43,9 @@ export default class DailyReport extends BaseCommand {
   @flags.boolean({ description: 'Veille technique (--no-veille pour s’en passer)', default: true })
   declare veille: boolean
 
+  @flags.boolean({ description: 'Coût des conversations Claude (--no-claude)', default: true })
+  declare claude: boolean
+
   @flags.boolean({ description: 'Notification macOS (--no-notify)', default: true })
   declare notify: boolean
 
@@ -74,6 +77,7 @@ export default class DailyReport extends BaseCommand {
      * On refuse plutôt que d'effacer en silence le dernier rapport valable.
      */
     const scope = await preferences.scope()
+    const options = await preferences.options()
     if (followedListIds(scope).length === 0) {
       this.logger.error(
         'Aucune liste suivie : ouvrez /parametres et cochez ce qu’on collecte. ' +
@@ -98,6 +102,8 @@ export default class DailyReport extends BaseCommand {
           mentions: !this.mentions,
           enrich: !this.enrich,
           veille: !this.veille,
+          /* Le drapeau de la ligne de commande et l'interrupteur de /parametres se cumulent. */
+          claude: !this.claude || !options.claude,
         },
       })
 

@@ -31,4 +31,7 @@ export default await Env.create(new URL('../', import.meta.url), {
   // ClickUp — jeton personnel (https://app.clickup.com/settings/apps)
   CLICKUP_API_TOKEN: Env.schema.secret(),
   CLICKUP_TEAM_ID: Env.schema.string.optional(),
+
+  // Transcriptions Claude Code — à renseigner en conteneur, où ~ n'est pas le bon home
+  CLAUDE_TRANSCRIPTS_PATH: Env.schema.string.optional(),
 })

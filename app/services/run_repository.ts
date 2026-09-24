@@ -143,6 +143,7 @@ export class RunRepository {
         folderId: task.folderId ?? '',
       })),
       veille: brut.veille ?? null,
+      claude: brut.claude ?? null,
       comments: brut.comments ?? {},
       branches: brut.branches ?? {},
       mentions: brut.mentions ?? [],

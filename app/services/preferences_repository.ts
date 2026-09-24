@@ -1,11 +1,14 @@
 import Preference from '#models/preference'
 import { defaultPreferences } from '#domain/projects'
 import { defaultScope } from '#domain/scope'
+import { defaultOptions } from '#domain/options'
 import type { ProjectPreferences } from '#domain/projects'
 import type { ScopePreferences } from '#domain/scope'
+import type { AppOptions } from '#domain/options'
 
 const PROJECTS_KEY = 'projects'
 const SCOPE_KEY = 'scope'
+const OPTIONS_KEY = 'options'
 
 /**
  * Les réglages de l'utilisateur.
@@ -20,6 +23,9 @@ const SCOPE_KEY = 'scope'
  *   — `scope` est le réglage de la page de paramétrage. Sa partie « espaces »
  *     décide de la COLLECTE elle-même — un espace non coché n'est jamais
  *     interrogé — tandis que sa partie « types » reste de l'affichage.
+ *
+ *   — `options` sont les interrupteurs de cette même page, pour ce qui ne
+ *     relève pas du périmètre ClickUp. Ils coupent la collecte ET l'affichage.
  */
 export class PreferencesRepository {
   async projects(): Promise<ProjectPreferences> {
@@ -41,6 +47,17 @@ export class PreferencesRepository {
     const clean = sanitizeScope(scope)
 
     await Preference.updateOrCreate({ key: SCOPE_KEY }, { value: JSON.stringify(clean) })
+    return clean
+  }
+
+  async options(): Promise<AppOptions> {
+    return this.#read(OPTIONS_KEY, sanitizeOptions, defaultOptions)
+  }
+
+  async saveOptions(options: AppOptions): Promise<AppOptions> {
+    const clean = sanitizeOptions(options)
+
+    await Preference.updateOrCreate({ key: OPTIONS_KEY }, { value: JSON.stringify(clean) })
     return clean
   }
 
@@ -108,4 +125,16 @@ function sanitizeScope(value: unknown): ScopePreferences {
   }
 
   return { team: typeof raw.team === 'string' && raw.team ? raw.team : null, lists, columns }
+}
+
+/**
+ * Un interrupteur ne s'allume que sur un `true` explicite.
+ *
+ * Un enregistrement écrit avant l'ajout d'une option n'en a pas : la retrouver
+ * allumée ferait démarrer une collecte que personne n'a demandée.
+ */
+function sanitizeOptions(value: unknown): AppOptions {
+  const raw = (value ?? {}) as Partial<Record<keyof AppOptions, unknown>>
+
+  return { claude: raw.claude === true }
 }

@@ -5,6 +5,7 @@ import { mapWithConcurrency } from '#clickup/rate_limiter'
 import { ClickUpError } from '#clickup/errors'
 import { branchesForTask, GitService } from '#services/git_service'
 import { VeilleService } from '#services/veille_service'
+import { ClaudeUsageService } from '#services/claude_usage_service'
 import { buildColumns } from '#domain/task/columns'
 import { toTaskView } from '#domain/task/view'
 import { buildPointage } from '#domain/rules/pointage'
@@ -42,6 +43,7 @@ export interface BuildReportOptions {
     mentions?: boolean
     enrich?: boolean
     veille?: boolean
+    claude?: boolean
   }
 }
 
@@ -56,7 +58,8 @@ export interface BuildReportOptions {
 export class ReportBuilder {
   constructor(
     private readonly git: GitService,
-    private readonly veille: VeilleService
+    private readonly veille: VeilleService,
+    private readonly claude: ClaudeUsageService
   ) {}
 
   async build(options: BuildReportOptions): Promise<Report> {
@@ -165,6 +168,7 @@ export class ReportBuilder {
 
     const branches = await this.#loadBranches(config, tasks, logger, skip.git)
     const veille = await this.#loadVeille(config, now, previous?.at ?? null, logger, skip.veille)
+    const claude = await this.#loadClaude(config, now, tasks, logger, skip.claude)
     const { comments, mentions } = await this.#loadComments({
       client,
       config,
@@ -219,6 +223,7 @@ export class ReportBuilder {
       blockers,
       pointage,
       veille,
+      claude,
       diff,
       stats,
       thresholds: {
@@ -295,6 +300,36 @@ export class ReportBuilder {
       })
     } catch (error) {
       logger.warn(`Veille indisponible : ${describe(error)}`)
+      return null
+    }
+  }
+
+  /**
+   * Le coût des conversations ne fait jamais échouer un rapport non plus.
+   *
+   * En conteneur sans montage de ~/.claude, ou sur une machine où Claude Code
+   * n'a jamais tourné, il n'y a simplement rien à lire : la carte disparaît.
+   */
+  async #loadClaude(
+    config: ClickUpDailyConfig,
+    now: DateTime,
+    tasks: TaskView[],
+    logger: BuildLogger,
+    skip?: boolean
+  ) {
+    if (skip) return null
+
+    try {
+      return await this.claude.collect({
+        config: config.claude,
+        zone: config.timezone,
+        now,
+        logger,
+        /* Les préfixes du workspace : ce qui distingue ROCND-699 de « GPT-4 ». */
+        knownPrefixes: [...new Set(tasks.map((task) => task.ref.toLowerCase().split('-')[0]))],
+      })
+    } catch (error) {
+      logger.warn(`Coût Claude indisponible : ${describe(error)}`)
       return null
     }
   }

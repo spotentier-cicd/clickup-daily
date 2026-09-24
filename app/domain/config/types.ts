@@ -110,6 +110,18 @@ export interface VeilleConfig {
   sources: VeilleSource[]
 }
 
+export interface ClaudeConfig {
+  /**
+   * Racine des transcriptions Claude Code. Le ~ est développé ; en conteneur,
+   * CLAUDE_TRANSCRIPTS_PATH prend le dessus.
+   */
+  transcriptsPath: string
+  /** Les sous-agents ont leurs propres fichiers : sans eux, le total est faux. */
+  includeSubagents: boolean
+  /** Chercher aussi les tickets cités dans le texte des messages, pas que dans la branche. */
+  scanMessageText: boolean
+}
+
 export interface ClickUpDailyConfig {
   timezone: string
   columns: ColumnConfig[]
@@ -124,4 +136,5 @@ export interface ClickUpDailyConfig {
   ignoredCustomFieldsPrefix: string[]
   report: ReportConfig
   veille: VeilleConfig
+  claude: ClaudeConfig
 }
