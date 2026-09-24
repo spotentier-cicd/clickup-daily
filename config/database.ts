@@ -1,4 +1,5 @@
 import app from '@adonisjs/core/services/app'
+import env from '#start/env'
 import { defineConfig } from '@adonisjs/lucid'
 
 const dbConfig = defineConfig({
@@ -15,10 +16,16 @@ const dbConfig = defineConfig({
       client: 'better-sqlite3',
 
       connection: {
-        /**
-         * Database file location.
+        /*
+         * Emplacement du fichier, dans tmp/.
+         *
+         * Il est paramétrable parce que les tests DOIVENT écrire ailleurs :
+         * la suite vide la table des préférences entre deux cas, et elle le
+         * ferait dans la base de travail — effaçant en silence le périmètre et
+         * les réglages d'affichage de l'utilisateur. .env.test pointe donc sur
+         * son propre fichier.
          */
-        filename: app.tmpPath('db.sqlite3'),
+        filename: app.tmpPath(env.get('DB_FILENAME', 'db.sqlite3')),
       },
 
       /**

@@ -25,6 +25,9 @@ export default await Env.create(new URL('../', import.meta.url), {
   // Session
   SESSION_DRIVER: Env.schema.enum(['cookie', 'memory', 'database'] as const),
 
+  // Base SQLite, dans tmp/ — les tests en utilisent une autre (voir .env.test)
+  DB_FILENAME: Env.schema.string.optional(),
+
   // ClickUp — jeton personnel (https://app.clickup.com/settings/apps)
   CLICKUP_API_TOKEN: Env.schema.secret(),
   CLICKUP_TEAM_ID: Env.schema.string.optional(),

@@ -31,7 +31,12 @@ export const plugins: Config['plugins'] = [
  * The teardown functions are executed after all the tests
  */
 export const runnerHooks: Required<Pick<Config, 'setup' | 'teardown'>> = {
-  setup: [],
+  /*
+   * La base de test est migrée avant la suite et défaite après : elle part
+   * donc vide à chaque exécution. C'est ce qui permet aux tests de vider des
+   * tables sans emporter la base de travail — voir DB_FILENAME dans .env.test.
+   */
+  setup: [() => testUtils.db().migrate()],
   teardown: [],
 }
 
