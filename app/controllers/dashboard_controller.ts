@@ -2,7 +2,7 @@ import { inject } from '@adonisjs/core'
 import config from '#config/clickup_daily'
 import { RunRepository } from '#services/run_repository'
 import { PreferencesRepository } from '#services/preferences_repository'
-import { buildProjectCatalog } from '#domain/projects'
+import { buildFieldCatalog, buildProjectCatalog } from '#domain/projects'
 import type { HttpContext } from '@adonisjs/core/http'
 import type Run from '#models/run'
 import type { SerializedReport } from '#domain/report_serializer'
@@ -44,6 +44,8 @@ export default class DashboardController {
           label: environment.label,
         }))
       ),
+      /* Ce que les cartes peuvent afficher, avec de quoi repérer les champs inutiles. */
+      fields: buildFieldCatalog((report?.tasks ?? []) as never),
       preferences: await preferences.projects(),
       days: await runs.availableDays(),
       day: run?.day ?? null,
