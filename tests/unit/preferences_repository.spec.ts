@@ -10,7 +10,12 @@ test.group('PreferencesRepository', (group) => {
   test('rend des préférences vides quand rien n’est enregistré', async ({ assert }) => {
     const preferences = await new PreferencesRepository().projects()
 
-    assert.deepEqual(preferences, { hiddenEnvironments: [], hiddenLists: [], environmentOrder: [] })
+    assert.deepEqual(preferences, {
+      hiddenEnvironments: [],
+      hiddenLists: [],
+      environmentOrder: [],
+      hiddenFields: [],
+    })
   })
 
   test('enregistre puis relit', async ({ assert }) => {
@@ -19,27 +24,22 @@ test.group('PreferencesRepository', (group) => {
       hiddenEnvironments: ['ROC'],
       hiddenLists: ['TEMPO::Tempo Bug Tracking'],
       environmentOrder: ['TEMPO', 'ROCND'],
+      hiddenFields: ['Requester'],
     })
 
     assert.deepEqual(await repository.projects(), {
       hiddenEnvironments: ['ROC'],
       hiddenLists: ['TEMPO::Tempo Bug Tracking'],
       environmentOrder: ['TEMPO', 'ROCND'],
+      hiddenFields: ['Requester'],
     })
   })
 
   test('écrase au lieu d’empiler', async ({ assert }) => {
     const repository = new PreferencesRepository()
-    await repository.saveProjects({
-      hiddenEnvironments: ['ROC'],
-      hiddenLists: [],
-      environmentOrder: [],
-    })
-    await repository.saveProjects({
-      hiddenEnvironments: ['TEMPO'],
-      hiddenLists: [],
-      environmentOrder: [],
-    })
+    const vide = { hiddenLists: [], environmentOrder: [], hiddenFields: [] }
+    await repository.saveProjects({ hiddenEnvironments: ['ROC'], ...vide })
+    await repository.saveProjects({ hiddenEnvironments: ['TEMPO'], ...vide })
 
     const preferences = await repository.projects()
     assert.deepEqual(preferences.hiddenEnvironments, ['TEMPO'])
@@ -63,6 +63,7 @@ test.group('PreferencesRepository', (group) => {
       hiddenEnvironments: ['ROC', 'TEMPO'],
       hiddenLists: [],
       environmentOrder: [],
+      hiddenFields: [],
     })
   })
 
@@ -73,6 +74,7 @@ test.group('PreferencesRepository', (group) => {
       hiddenEnvironments: [],
       hiddenLists: [],
       environmentOrder: [],
+      hiddenFields: [],
     })
   })
 })

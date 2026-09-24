@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { router } from '@inertiajs/react'
-import { isTaskVisible, listKey } from '#domain/projects'
+import { defaultPreferences, isTaskVisible, listKey } from '#domain/projects'
 import type { ProjectCatalog, ProjectPreferences } from '#domain/projects'
 import type { Report, Task } from '@/lib/report'
 
@@ -92,8 +92,18 @@ export function useProjectPreferences(initial: ProjectPreferences) {
         })
       },
 
+      toggleField(name: string) {
+        const hidden = preferences.hiddenFields.includes(name)
+        persist({
+          ...preferences,
+          hiddenFields: hidden
+            ? preferences.hiddenFields.filter((item) => item !== name)
+            : [...preferences.hiddenFields, name],
+        })
+      },
+
       reset() {
-        persist({ hiddenEnvironments: [], hiddenLists: [], environmentOrder: [] })
+        persist(defaultPreferences())
       },
     }),
     [preferences, persist]
@@ -102,6 +112,7 @@ export function useProjectPreferences(initial: ProjectPreferences) {
   const isEnvironmentVisible = (key: string) => !preferences.hiddenEnvironments.includes(key)
   const isListVisible = (envKey: string, listName: string) =>
     !preferences.hiddenLists.includes(listKey(envKey, listName))
+  const isFieldVisible = (name: string) => !preferences.hiddenFields.includes(name)
 
-  return { preferences, isEnvironmentVisible, isListVisible, ...actions }
+  return { preferences, isEnvironmentVisible, isListVisible, isFieldVisible, ...actions }
 }

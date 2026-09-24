@@ -8,6 +8,7 @@ const projectsValidator = vine.compile(
     hiddenEnvironments: vine.array(vine.string()),
     hiddenLists: vine.array(vine.string()),
     environmentOrder: vine.array(vine.string()),
+    hiddenFields: vine.array(vine.string()),
   })
 )
 

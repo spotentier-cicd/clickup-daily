@@ -1,11 +1,13 @@
 import { test } from '@japa/runner'
 import {
+  buildFieldCatalog,
   buildProjectCatalog,
   countHidden,
   defaultPreferences,
   isTaskVisible,
   listKey,
   orderedEnvironments,
+  visibleFields,
 } from '#domain/projects'
 
 const ENVIRONMENTS = [
@@ -120,5 +122,63 @@ test.group('orderedEnvironments', () => {
       ordered.map((e) => e.key),
       ['ROC', 'ROCND', 'TEMPO']
     )
+  })
+})
+
+test.group('buildFieldCatalog', () => {
+  const tasks = [
+    {
+      customFields: [
+        { name: 'Requester', value: 'Maxime' },
+        { name: 'MoSCoW', value: 'Must Have' },
+      ],
+    },
+    {
+      customFields: [
+        { name: 'Requester', value: 'Nicolas' },
+        { name: 'MoSCoW', value: 'Should Have' },
+      ],
+    },
+    {
+      customFields: [
+        { name: 'Requester', value: 'Maxime' },
+        { name: 'Phase', value: 'Étude' },
+      ],
+    },
+    {
+      customFields: [
+        { name: 'Requester', value: 'Sam' },
+        { name: 'Confirmé', value: 'oui' },
+      ],
+    },
+  ] as never[]
+
+  test('compte les occurrences et les valeurs distinctes', ({ assert }) => {
+    const catalog = buildFieldCatalog(tasks)
+    const requester = catalog.find((f) => f.name === 'Requester')!
+
+    assert.equal(requester.count, 4)
+    assert.equal(requester.distinct, 3)
+    assert.equal(catalog[0].name, 'Requester', 'le plus fréquent d’abord')
+  })
+
+  test('signale comme bruit ce qui est partout ou toujours pareil', ({ assert }) => {
+    const catalog = buildFieldCatalog(tasks)
+
+    assert.isTrue(
+      catalog.find((f) => f.name === 'Requester')!.noisy,
+      'présent sur toutes les tâches'
+    )
+    assert.isTrue(catalog.find((f) => f.name === 'Confirmé')!.noisy, 'une seule valeur possible')
+    assert.isFalse(catalog.find((f) => f.name === 'MoSCoW')!.noisy, 'discriminant')
+  })
+
+  test('visibleFields retire les champs masqués en gardant l’ordre', ({ assert }) => {
+    const fields = [{ name: 'Requester' }, { name: 'MoSCoW' }, { name: 'Phase' }]
+
+    assert.deepEqual(visibleFields(fields, { hiddenFields: ['Requester'] }), [
+      { name: 'MoSCoW' },
+      { name: 'Phase' },
+    ])
   })
 })

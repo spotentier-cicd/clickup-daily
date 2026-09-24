@@ -49,10 +49,18 @@ export interface ProjectPreferences {
   hiddenLists: string[]
   /** Ordre d'affichage des espaces ; ceux qui n'y sont pas suivent, dans l'ordre de la config. */
   environmentOrder: string[]
+  /**
+   * Champs personnalisés masqués sur les cartes.
+   *
+   * ClickUp en renvoie beaucoup, et certains sont renseignés sur toutes les
+   * tâches : « Requester » sur 57 cartes sur 57 n'aide à distinguer aucune
+   * tâche des autres, il ne fait qu'épaissir chaque carte.
+   */
+  hiddenFields: string[]
 }
 
 export function defaultPreferences(): ProjectPreferences {
-  return { hiddenEnvironments: [], hiddenLists: [], environmentOrder: [] }
+  return { hiddenEnvironments: [], hiddenLists: [], environmentOrder: [], hiddenFields: [] }
 }
 
 /**
@@ -136,4 +144,49 @@ export function countHidden(
   preferences: ProjectPreferences
 ): number {
   return tasks.filter((task) => !isTaskVisible(task, preferences)).length
+}
+
+export interface FieldUsage {
+  name: string
+  /** Nombre de tâches où le champ est renseigné. */
+  count: number
+  /** Nombre de valeurs distinctes : un champ à valeur unique ne trie rien. */
+  distinct: number
+  /**
+   * Un champ présent presque partout ne distingue aucune tâche, un champ à
+   * valeur unique non plus. Les deux alourdissent la carte sans l'informer.
+   */
+  noisy: boolean
+}
+
+/** Les champs personnalisés réellement présents, avec de quoi décider lesquels garder. */
+export function buildFieldCatalog(tasks: Pick<TaskView, 'customFields'>[]): FieldUsage[] {
+  const counts = new Map<string, Set<string>>()
+  const totals = new Map<string, number>()
+
+  for (const task of tasks) {
+    for (const field of task.customFields) {
+      totals.set(field.name, (totals.get(field.name) ?? 0) + 1)
+      const values = counts.get(field.name) ?? new Set<string>()
+      values.add(field.value)
+      counts.set(field.name, values)
+    }
+  }
+
+  const total = tasks.length || 1
+
+  return [...totals.entries()]
+    .map(([name, count]) => {
+      const distinct = counts.get(name)?.size ?? 0
+      return { name, count, distinct, noisy: count / total > 0.8 || distinct <= 1 }
+    })
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'fr'))
+}
+
+/** Les champs à afficher sur une carte, dans l'ordre d'origine. */
+export function visibleFields<T extends { name: string }>(
+  fields: T[],
+  preferences: Pick<ProjectPreferences, 'hiddenFields'>
+): T[] {
+  return fields.filter((field) => !preferences.hiddenFields.includes(field.name))
 }

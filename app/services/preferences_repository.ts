@@ -42,5 +42,6 @@ function sanitize(value: unknown): ProjectPreferences {
     hiddenEnvironments: strings(raw.hiddenEnvironments),
     hiddenLists: strings(raw.hiddenLists),
     environmentOrder: strings(raw.environmentOrder),
+    hiddenFields: strings(raw.hiddenFields),
   }
 }
