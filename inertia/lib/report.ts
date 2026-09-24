@@ -1,4 +1,4 @@
-import type { SerializedReport } from '#domain/report_serializer'
+import type { ReportDto } from '#domain/report'
 
 /*
 | Le contrat, vu du navigateur.
@@ -7,7 +7,7 @@ import type { SerializedReport } from '#domain/report_serializer'
 | typecheck du front casse. C'est voulu — c'est ce qui garantit qu'il n'y a
 | qu'une définition du rapport dans le projet.
 */
-export type Report = SerializedReport
+export type Report = ReportDto
 export type Task = Report['tasks'][number]
 export type Blocker = Report['blockers'][number]
 export type Pointage = NonNullable<Report['pointage']>

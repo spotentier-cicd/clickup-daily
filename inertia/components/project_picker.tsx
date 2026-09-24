@@ -12,14 +12,12 @@ import {
 } from '@/components/ui/sheet'
 import { cn } from 'cn'
 import { pluralize } from '@/lib/format'
-import type { FieldUsage } from '#domain/projects'
-import type { ProjectCatalog } from '@/lib/projects'
-import type { useProjectPreferences } from '@/lib/projects'
+import type { FieldUsage, ProjectCatalog, ProjectControls } from '@/lib/projects'
 
 interface ProjectPickerProps {
   catalog: ProjectCatalog
   fields: FieldUsage[]
-  preferences: ReturnType<typeof useProjectPreferences>
+  preferences: ProjectControls
   hiddenCount: number
 }
 

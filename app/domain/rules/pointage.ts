@@ -14,8 +14,8 @@ export interface RawTimeEntry {
   start?: string | number
 }
 
-export interface PointageDay {
-  date: DateTime
+export type PointageDayOf<D> = {
+  date: D
   ms: number
   targetMs: number
   isToday: boolean
@@ -23,11 +23,11 @@ export interface PointageDay {
   missingMs: number
 }
 
-export interface Pointage {
+export type PointageOf<D> = {
   /** Millisecondes par identifiant de tâche, sur temps.lookbackDays. */
   byTask: Record<string, number>
-  days: PointageDay[]
-  prevDays: PointageDay[]
+  days: PointageDayOf<D>[]
+  prevDays: PointageDayOf<D>[]
   targetMs: number
   weekMs: number
   weekTargetMs: number
@@ -36,12 +36,15 @@ export interface Pointage {
   /** Ce qui manque sur les jours écoulés de la semaine. */
   gapMs: number
   /** Jours écoulés sans la moindre saisie. */
-  untracked: PointageDay[]
+  untracked: PointageDayOf<D>[]
   /** Jours saisis mais en dessous de la cible. */
-  partial: PointageDay[]
+  partial: PointageDayOf<D>[]
   /** Référence de la tâche dont le minuteur tourne encore, le cas échéant. */
   running: string | null
 }
+
+export type PointageDay = PointageDayOf<DateTime>
+export type Pointage = PointageOf<DateTime>
 
 export function buildPointage(
   entries: RawTimeEntry[],

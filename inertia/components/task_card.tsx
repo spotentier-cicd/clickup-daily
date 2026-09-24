@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { cn } from 'cn'
+import { visibleFields } from '#domain/projects'
 import { formatAge, formatDate, formatDuration, PRIORITY_CLASS, PRIORITY_LABEL } from '@/lib/format'
 import type { Branch, Comment, Task } from '@/lib/report'
 
@@ -7,14 +8,16 @@ interface TaskCardProps {
   task: Task
   branches: Branch[]
   comments: Comment[]
+  hiddenFields: string[]
 }
 
 /**
  * Une tâche, condensée : de quoi décider quoi faire sans ouvrir ClickUp.
  * Rien n'est affiché qui n'a pas de valeur — pas de ligne vide « échéance : — ».
  */
-export function TaskCard({ task, branches, comments }: TaskCardProps) {
+export function TaskCard({ task, branches, comments, hiddenFields }: TaskCardProps) {
   const overEstimate = task.timeEstimateMs > 0 && task.timeSpentMs > task.timeEstimateMs
+  const fields = visibleFields(task.customFields, { hiddenFields })
 
   return (
     <article className="group rounded-lg border bg-card p-3 text-card-foreground shadow-xs transition-colors hover:border-foreground/20">
@@ -80,9 +83,9 @@ export function TaskCard({ task, branches, comments }: TaskCardProps) {
         </p>
       )}
 
-      {task.customFields.length > 0 && (
+      {fields.length > 0 && (
         <ul className="mt-2 flex flex-wrap gap-1">
-          {task.customFields.map((field) => (
+          {fields.map((field) => (
             <li key={field.name}>
               <Badge variant="secondary" className="text-[10px] font-normal">
                 <span className="text-muted-foreground">{field.name}</span>&nbsp;{field.value}

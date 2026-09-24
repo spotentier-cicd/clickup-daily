@@ -5,7 +5,7 @@ import TaskSnapshot from '#models/task_snapshot'
 import { serializeReport } from '#domain/report_serializer'
 import type { Report } from '#domain/report'
 import type { TaskSnapshot as TaskSnapshotData } from '#domain/rules/diff'
-import type { SerializedReport } from '#domain/report_serializer'
+import type { ReportDto } from '#domain/report'
 
 /** Ce qui a déclenché la collecte. */
 export type RunTrigger = 'scheduled' | 'manual' | 'refresh'
@@ -108,8 +108,8 @@ export class RunRepository {
   }
 
   /** Le rapport sérialisé d'un run, prêt à partir en props Inertia. */
-  payloadOf(run: Run): SerializedReport {
-    return JSON.parse(run.payload) as SerializedReport
+  payloadOf(run: Run): ReportDto {
+    return JSON.parse(run.payload) as ReportDto
   }
 
   /** Les journées disponibles, de la plus récente à la plus ancienne. */

@@ -1,26 +1,18 @@
 import { DateTime } from 'luxon'
-import type { Report } from '#domain/report'
+import type { Report, ReportDto } from '#domain/report'
 
 /*
 | Un seul format sérialisé, pour deux usages : ce qu'on stocke en base et ce
-| qu'on passe en props à React. Les deux doivent être du JSON, et il n'y a donc
-| aucune raison d'avoir deux conversions à garder d'accord.
+| qu'on passe en props à React.
 |
-| Les DateTime de Luxon deviennent des chaînes ISO ; tout le reste est déjà du
-| JSON.
+| Le type d'arrivée n'est pas déduit par un type conditionnel récursif mais
+| déclaré : ReportDto, c'est ReportOf<string>. Le compilateur n'a donc rien à
+| recalculer à chaque endroit où le rapport traverse une frontière — et une
+| version dérivée coûtait assez cher pour faire capituler l'inférence des props
+| d'Inertia.
 */
-export type Serialized<T> = T extends DateTime
-  ? string
-  : T extends (infer U)[]
-    ? Serialized<U>[]
-    : T extends object
-      ? { [K in keyof T]: Serialized<T[K]> }
-      : T
-
-export type SerializedReport = Serialized<Report>
-
-export function serializeReport(report: Report): SerializedReport {
-  return serialize(report) as SerializedReport
+export function serializeReport(report: Report): ReportDto {
+  return serialize(report) as ReportDto
 }
 
 function serialize(value: unknown): unknown {

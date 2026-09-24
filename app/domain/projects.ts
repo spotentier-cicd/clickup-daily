@@ -19,7 +19,7 @@ export function listKey(envKey: string, listName: string): string {
   return `${envKey}::${listName}`
 }
 
-export interface ProjectList {
+export type ProjectList = {
   key: string
   name: string
   envKey: string
@@ -28,7 +28,7 @@ export interface ProjectList {
   bugs: number
 }
 
-export interface ProjectEnvironment {
+export type ProjectEnvironment = {
   key: string
   label: string
   total: number
@@ -38,11 +38,11 @@ export interface ProjectEnvironment {
 }
 
 /** Ce qui est disponible à l'affichage, avec les compteurs pour décider en connaissance de cause. */
-export interface ProjectCatalog {
+export type ProjectCatalog = {
   environments: ProjectEnvironment[]
 }
 
-export interface ProjectPreferences {
+export type ProjectPreferences = {
   /** Espaces masqués. Absent de la liste = visible : un nouvel espace apparaît par défaut. */
   hiddenEnvironments: string[]
   /** Listes masquées, par leur clé `espace::liste`. */
@@ -146,7 +146,7 @@ export function countHidden(
   return tasks.filter((task) => !isTaskVisible(task, preferences)).length
 }
 
-export interface FieldUsage {
+export type FieldUsage = {
   name: string
   /** Nombre de tâches où le champ est renseigné. */
   count: number

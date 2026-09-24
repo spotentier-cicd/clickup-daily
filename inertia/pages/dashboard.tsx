@@ -11,12 +11,18 @@ import { ChangesSection } from '@/components/changes_section'
 import { MentionsSection } from '@/components/mentions_section'
 import { cn } from 'cn'
 import { matchesSearch } from '@/lib/filters'
+import { ProjectPicker } from '@/components/project_picker'
+import { filterReport, useProjectPreferences } from '@/lib/projects'
 import { applyTheme, readTheme, type Theme } from '@/lib/theme'
 import { formatDateTime, formatLongDate, pluralize } from '@/lib/format'
 import type { Report, Task } from '@/lib/report'
+import type { FieldUsage, ProjectCatalog, ProjectPreferences } from '@/lib/projects'
 
 interface DashboardProps {
   report: Report | null
+  catalog: ProjectCatalog
+  fields: FieldUsage[]
+  preferences: ProjectPreferences
   days: { day: string; ranAt: string }[]
   day: string | null
   trigger: string | null
@@ -25,7 +31,14 @@ interface DashboardProps {
 const THEME_ICON = { auto: SunMoon, light: Sun, dark: Moon }
 const THEME_NEXT: Record<Theme, Theme> = { auto: 'light', light: 'dark', dark: 'auto' }
 
-export default function Dashboard({ report, days, day }: DashboardProps) {
+export default function Dashboard({
+  report,
+  catalog,
+  fields,
+  preferences,
+  days,
+  day,
+}: DashboardProps) {
   const [search, setSearch] = useState('')
   const [mineOnly, setMineOnly] = useState(false)
   /* Pas de SSR ici : le premier rendu a lieu dans le navigateur, donc on peut
@@ -43,12 +56,22 @@ export default function Dashboard({ report, days, day }: DashboardProps) {
 
   useEffect(() => applyTheme(theme), [theme])
 
-  const visible = useMemo(() => {
-    if (!report) return []
-    return report.tasks.filter((task) => (!mineOnly || task.isMine) && matchesSearch(task, search))
-  }, [report, mineOnly, search])
+  const projects = useProjectPreferences(preferences)
 
-  if (!report) return <EmptyState />
+  /* D'abord les projets choisis, ensuite seulement la recherche et le filtre. */
+  const selected = useMemo(
+    () => (report ? filterReport(report, projects.preferences) : null),
+    [report, projects.preferences]
+  )
+
+  const visible = useMemo(() => {
+    if (!selected) return []
+    return selected.tasks.filter(
+      (task) => (!mineOnly || task.isMine) && matchesSearch(task, search)
+    )
+  }, [selected, mineOnly, search])
+
+  if (!report || !selected) return <EmptyState />
 
   const ThemeIcon = THEME_ICON[theme]
   const isArchive = days.length > 0 && day !== days[0].day
@@ -68,6 +91,12 @@ export default function Dashboard({ report, days, day }: DashboardProps) {
             </span>
           )}
           <div className="ml-auto flex items-center gap-2">
+            <ProjectPicker
+              catalog={catalog}
+              fields={fields}
+              preferences={projects}
+              hiddenCount={selected.hiddenCount}
+            />
             <Button
               variant="outline"
               size="sm"
@@ -131,12 +160,12 @@ export default function Dashboard({ report, days, day }: DashboardProps) {
 
       <div className="mb-5 grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <BlockersSection blockers={report.blockers} maxItems={12} />
+          <BlockersSection blockers={selected.blockers} maxItems={12} />
         </div>
         <PointageSection pointage={report.pointage} />
         <ChangesSection diff={report.diff} />
         <div className="lg:col-span-2">
-          <MentionsSection mentions={report.mentions} />
+          <MentionsSection mentions={selected.mentions} />
         </div>
       </div>
 
@@ -159,6 +188,7 @@ export default function Dashboard({ report, days, day }: DashboardProps) {
               columns={report.columns}
               branches={report.branches}
               comments={report.comments}
+              hiddenFields={projects.preferences.hiddenFields}
             />
           </TabsContent>
         ))}
@@ -169,14 +199,19 @@ export default function Dashboard({ report, days, day }: DashboardProps) {
 
 /** Mes tâches et les bugs d'abord : c'est ce qu'on ouvre en premier. */
 function buildTabs(report: Report, visible: Task[]) {
+  const shown = new Set(visible.map((task) => task.envKey))
+
   return [
     { key: 'mine', label: '👤 Mes tâches', tasks: visible.filter((task) => task.isMine) },
     { key: 'bugs', label: '🐞 Bugs', tasks: visible.filter((task) => task.isBug) },
-    ...report.environments.map((environment) => ({
-      key: environment.key,
-      label: environment.label,
-      tasks: visible.filter((task) => task.envKey === environment.key),
-    })),
+    /* Un espace entièrement masqué ne mérite pas un onglet vide. */
+    ...report.environments
+      .filter((environment) => shown.has(environment.key))
+      .map((environment) => ({
+        key: environment.key,
+        label: environment.label,
+        tasks: visible.filter((task) => task.envKey === environment.key),
+      })),
   ]
 }
 

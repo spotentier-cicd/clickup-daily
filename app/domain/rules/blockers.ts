@@ -2,7 +2,7 @@ import { daysAgo } from '#domain/time'
 import { branchState, isUnpushed } from '#domain/git/types'
 import { compareTasks } from '#domain/task/types'
 import type { DateTime } from 'luxon'
-import type { TaskView } from '#domain/task/types'
+import type { TaskView, TaskViewOf } from '#domain/task/types'
 import type { GitBranch } from '#domain/git/types'
 import type { Mention } from '#domain/mention/types'
 import type { BlockersConfig } from '#domain/config/types'
@@ -34,13 +34,15 @@ export const SEVERITY = {
   recette: 6,
 } as const
 
-export interface Blocker {
-  task: TaskView
+export type BlockerOf<D> = {
+  task: TaskViewOf<D>
   reasons: string[]
   severity: number
   /** Ancienneté de la raison la plus vieille, en jours. */
   age: number
 }
+
+export type Blocker = BlockerOf<DateTime>
 
 export interface ComputeBlockersOptions {
   tasks: TaskView[]

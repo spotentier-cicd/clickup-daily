@@ -47,7 +47,7 @@ export interface RawTask {
 }
 
 /** Une colonne du tableau, avec ses statuts déjà normalisés. */
-export interface Column {
+export type Column = {
   key: string
   label: string
   /** Statuts normalisés (minuscules, sans accents). */
@@ -56,13 +56,20 @@ export interface Column {
   order: number
 }
 
-export interface CustomFieldValue {
+export type CustomFieldValue = {
   name: string
   value: string
 }
 
-/** La tâche telle que le reste du programme la manipule. */
-export interface TaskView {
+/**
+ * La tâche telle que le reste du programme la manipule.
+ *
+ * Générique sur la représentation des dates : `TaskView` porte des DateTime
+ * côté calcul, `TaskViewOf<string>` les mêmes champs en ISO côté transport.
+ * Une seule déclaration, donc aucun risque que les deux divergent — et aucun
+ * type conditionnel récursif, que le compilateur paie cher à chaque usage.
+ */
+export type TaskViewOf<D> = {
   id: string
   /** Référence lisible (ROC-1789) ; retombe sur l'id si la tâche n'en a pas. */
   ref: string
@@ -82,9 +89,9 @@ export interface TaskView {
   listName: string
   folderName: string
   parent: string | null
-  due: DateTime | null
-  updated: DateTime | null
-  created: DateTime | null
+  due: D | null
+  updated: D | null
+  created: D | null
   /** Estimation formatée (« 4h30 ») ; la valeur brute est dans timeEstimateMs. */
   timeEstimate: string
   timeEstimateMs: number
@@ -101,6 +108,8 @@ export interface TaskView {
   isOverdue: boolean
   overdueDays: number
 }
+
+export type TaskView = TaskViewOf<DateTime>
 
 export const PRIORITY_ORDER: Record<string, number> = {
   urgent: 0,

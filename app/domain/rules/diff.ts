@@ -1,6 +1,6 @@
 import { normalize } from '#domain/text'
 import type { DateTime } from 'luxon'
-import type { TaskView } from '#domain/task/types'
+import type { TaskView, TaskViewOf } from '#domain/task/types'
 
 /*
 | Ce qui a bougé depuis le rapport précédent.
@@ -10,7 +10,7 @@ import type { TaskView } from '#domain/task/types'
 */
 
 /** L'état d'une tâche retenu pour la comparaison du lendemain. */
-export interface TaskSnapshot {
+export type TaskSnapshot = {
   id: string
   ref: string
   name: string
@@ -21,15 +21,17 @@ export interface TaskSnapshot {
   assigneeIds: number[]
 }
 
-export interface ReportDiff {
+export type ReportDiffOf<D> = {
   /** Date du run de référence, null au tout premier rapport. */
-  since: DateTime | null
-  entered: TaskView[]
-  statusChanged: { task: TaskView; previousStatus: string }[]
+  since: D | null
+  entered: TaskViewOf<D>[]
+  statusChanged: { task: TaskViewOf<D>; previousStatus: string }[]
   /** Tâches sorties du périmètre, avec leur dernier statut connu. */
   left: { snapshot: TaskSnapshot; newStatus: string }[]
-  assignedToMe: TaskView[]
+  assignedToMe: TaskViewOf<D>[]
 }
+
+export type ReportDiff = ReportDiffOf<DateTime>
 
 export function toSnapshot(task: TaskView): TaskSnapshot {
   return {

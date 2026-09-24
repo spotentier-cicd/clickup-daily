@@ -6,13 +6,14 @@ interface TaskBoardProps {
   columns: ReportColumn[]
   branches: Report['branches']
   comments: Report['comments']
+  hiddenFields: string[]
 }
 
 /**
  * Les tâches en colonnes, dans l'ordre du workflow. Une colonne vide reste
  * affichée : son absence se remarquerait moins que son vide.
  */
-export function TaskBoard({ tasks, columns, branches, comments }: TaskBoardProps) {
+export function TaskBoard({ tasks, columns, branches, comments, hiddenFields }: TaskBoardProps) {
   if (tasks.length === 0) {
     return <p className="py-12 text-center text-sm text-muted-foreground">Aucune tâche ici.</p>
   }
@@ -41,6 +42,7 @@ export function TaskBoard({ tasks, columns, branches, comments }: TaskBoardProps
                   task={task}
                   branches={branches[task.id] ?? []}
                   comments={comments[task.id] ?? []}
+                  hiddenFields={hiddenFields}
                 />
               ))}
             </div>

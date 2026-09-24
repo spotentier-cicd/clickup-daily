@@ -5,7 +5,7 @@ import { PreferencesRepository } from '#services/preferences_repository'
 import { buildFieldCatalog, buildProjectCatalog } from '#domain/projects'
 import type { HttpContext } from '@adonisjs/core/http'
 import type Run from '#models/run'
-import type { SerializedReport } from '#domain/report_serializer'
+import type { ReportDto } from '#domain/report'
 
 export default class DashboardController {
   /** Le rapport le plus récent. */
@@ -50,6 +50,6 @@ export default class DashboardController {
       days: await runs.availableDays(),
       day: run?.day ?? null,
       trigger: run?.trigger ?? null,
-    } satisfies { report: SerializedReport | null } & Record<string, unknown>
+    } satisfies { report: ReportDto | null } & Record<string, unknown>
   }
 }

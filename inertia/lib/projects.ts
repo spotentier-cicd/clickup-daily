@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { router } from '@inertiajs/react'
 import { defaultPreferences, isTaskVisible, listKey } from '#domain/projects'
-import type { ProjectCatalog, ProjectPreferences } from '#domain/projects'
+import type { FieldUsage, ProjectCatalog, ProjectPreferences } from '#domain/projects'
 import type { Report, Task } from '@/lib/report'
 
 /*
@@ -13,7 +13,7 @@ import type { Report, Task } from '@/lib/report'
 | sinon le tableau de bord se contredirait.
 */
 
-export type { ProjectCatalog, ProjectPreferences }
+export type { FieldUsage, ProjectCatalog, ProjectPreferences }
 
 export interface FilteredReport {
   tasks: Task[]
@@ -41,12 +41,26 @@ export function filterReport(report: Report, preferences: ProjectPreferences): F
   }
 }
 
+/** L'API du hook, déclarée explicitement plutôt qu'inférée. */
+export interface ProjectControls {
+  preferences: ProjectPreferences
+  isEnvironmentVisible: (key: string) => boolean
+  isListVisible: (envKey: string, listName: string) => boolean
+  isFieldVisible: (name: string) => boolean
+  toggleEnvironment: (key: string) => void
+  toggleList: (envKey: string, listName: string) => void
+  toggleField: (name: string) => void
+  /** Ne montrer qu'un espace : le geste le plus fréquent quand on se concentre. */
+  onlyEnvironment: (catalog: ProjectCatalog, key: string) => void
+  reset: () => void
+}
+
 /**
  * Les préférences, appliquées tout de suite à l'écran et enregistrées en
  * arrière-plan. On n'attend pas le serveur pour redessiner : cocher une case
  * ne doit pas donner l'impression de ramer.
  */
-export function useProjectPreferences(initial: ProjectPreferences) {
+export function useProjectPreferences(initial: ProjectPreferences): ProjectControls {
   const [preferences, setPreferences] = useState(initial)
 
   const persist = useCallback((next: ProjectPreferences) => {
@@ -81,7 +95,6 @@ export function useProjectPreferences(initial: ProjectPreferences) {
         })
       },
 
-      /** Ne montrer qu'un espace : le geste le plus fréquent quand on se concentre. */
       onlyEnvironment(catalog: ProjectCatalog, key: string) {
         persist({
           ...preferences,

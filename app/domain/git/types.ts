@@ -1,10 +1,10 @@
 import type { DateTime } from 'luxon'
 
 /** Une branche locale rattachée à un ticket par la référence dans son nom. */
-export interface GitBranch {
+export type GitBranchOf<D> = {
   repo: string
   name: string
-  lastCommit: DateTime | null
+  lastCommit: D | null
   upstream: string
   ahead: number
   behind: number
@@ -13,17 +13,19 @@ export interface GitBranch {
   dirty: number
 }
 
-export function neverPushed(branch: GitBranch): boolean {
+export type GitBranch = GitBranchOf<DateTime>
+
+export function neverPushed(branch: GitBranchOf<unknown>): boolean {
   return !branch.upstream
 }
 
 /** Du travail qui n'existe que sur ce poste. */
-export function isUnpushed(branch: GitBranch): boolean {
+export function isUnpushed(branch: GitBranchOf<unknown>): boolean {
   return neverPushed(branch) || branch.ahead > 0
 }
 
 /** Ce qui mérite d'être dit sur cette branche, ou une chaîne vide si tout est poussé. */
-export function branchState(branch: GitBranch): string {
+export function branchState(branch: GitBranchOf<unknown>): string {
   const bits: string[] = []
 
   if (neverPushed(branch)) {
