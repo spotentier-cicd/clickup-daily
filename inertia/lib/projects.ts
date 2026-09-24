@@ -18,20 +18,53 @@ export type { FieldUsage, ProjectCatalog, ProjectPreferences }
 export interface FilteredReport {
   tasks: Task[]
   blockers: Report['blockers']
+  /**
+   * Blocages retirés par le périmètre.
+   *
+   * On ne les jette PAS : le seul objet de cette page qu'on ne peut pas se
+   * permettre de rater, c'est un blocage. Ils sont montrés à part, avec de quoi
+   * réafficher le projet concerné.
+   */
+  hiddenBlockers: Report['blockers']
   mentions: Report['mentions']
+  diff: Report['diff']
   /** Tâches retirées par le choix des projets, pour pouvoir le dire. */
   hiddenCount: number
   counts: { total: number; mine: number; bugs: number }
 }
 
+/**
+ * Applique le périmètre à l'affichage.
+ *
+ * Le périmètre ne touche JAMAIS à la collecte : les tâches masquées continuent
+ * d'être ramassées et archivées. Sinon computeDiff verrait des entrées et des
+ * sorties fantômes à chaque changement de périmètre.
+ */
 export function filterReport(report: Report, preferences: ProjectPreferences): FilteredReport {
   const tasks = report.tasks.filter((task) => isTaskVisible(task, preferences))
   const visibleIds = new Set(tasks.map((task) => task.id))
+  const dansLePerimetre = (t: { id: string }) => visibleIds.has(t.id)
 
   return {
     tasks,
-    blockers: report.blockers.filter((blocker) => visibleIds.has(blocker.task.id)),
-    mentions: report.mentions.filter((mention) => visibleIds.has(mention.task.id)),
+    blockers: report.blockers.filter((blocker) => dansLePerimetre(blocker.task)),
+    hiddenBlockers: report.blockers.filter((blocker) => !dansLePerimetre(blocker.task)),
+    mentions: report.mentions.filter((mention) => dansLePerimetre(mention.task)),
+    diff: {
+      ...report.diff,
+      entered: report.diff.entered.filter(dansLePerimetre),
+      statusChanged: report.diff.statusChanged.filter((change) => dansLePerimetre(change.task)),
+      assignedToMe: report.diff.assignedToMe.filter(dansLePerimetre),
+      /*
+       * diff.left n'est filtré que par espace : TaskSnapshot ne porte pas de
+       * listName. Le filtrer par liste supposerait de changer la table
+       * task_snapshots, donc de rendre les archives incomparables — hors de
+       * question pour un filtre d'affichage.
+       */
+      left: report.diff.left.filter(
+        (sortie) => !preferences.hiddenEnvironments.includes(sortie.snapshot.envKey)
+      ),
+    },
     hiddenCount: report.tasks.length - tasks.length,
     counts: {
       total: tasks.length,
@@ -52,6 +85,8 @@ export interface ProjectControls {
   toggleField: (name: string) => void
   /** Ne montrer qu'un espace : le geste le plus fréquent quand on se concentre. */
   onlyEnvironment: (catalog: ProjectCatalog, key: string) => void
+  onlyList: (catalog: ProjectCatalog, envKey: string, listName: string) => void
+  hideNoisyFields: (fields: { name: string; noisy: boolean }[]) => void
   reset: () => void
 }
 
@@ -102,6 +137,31 @@ export function useProjectPreferences(initial: ProjectPreferences): ProjectContr
             .map((environment) => environment.key)
             .filter((item) => item !== key),
           hiddenLists: preferences.hiddenLists.filter((item) => item.startsWith(`${key}::`)),
+        })
+      },
+
+      /** N'afficher qu'une liste : le geste quotidien réel. */
+      onlyList(catalog: ProjectCatalog, envKey: string, listName: string) {
+        const garde = listKey(envKey, listName)
+        persist({
+          ...preferences,
+          hiddenEnvironments: [],
+          hiddenLists: catalog.environments
+            .flatMap((environment) => environment.lists.map((list) => list.key))
+            .filter((key) => key !== garde),
+        })
+      },
+
+      /** Masque en un clic les champs que buildFieldCatalog a déjà mesurés comme peu utiles. */
+      hideNoisyFields(fields: { name: string; noisy: boolean }[]) {
+        persist({
+          ...preferences,
+          hiddenFields: [
+            ...new Set([
+              ...preferences.hiddenFields,
+              ...fields.filter((field) => field.noisy).map((field) => field.name),
+            ]),
+          ],
         })
       },
 

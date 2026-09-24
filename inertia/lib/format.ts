@@ -47,6 +47,24 @@ export function formatDuration(ms: number): string {
   return `${minutes}min`
 }
 
+/*
+| DEUX UNITÉS, ET LA RÈGLE QUI LES SÉPARE :
+| une quantité hebdomadaire se COMPARE (13,2 h / 28 h, −7,8 h),
+| la durée d'une tâche se LIT (4h30).
+| D'où formatHours pour les agrégats du pointage, formatDuration pour une tâche.
+*/
+
+/** « 13,2 h » — réservé aux agrégats hebdomadaires. */
+export function formatHours(ms: number): string {
+  return `${(ms / 3_600_000).toFixed(1).replace('.', ',')} h`
+}
+
+/** « −7,8 h » avec un vrai signe moins U+2212, qui s'aligne sur des chiffres tabulaires. */
+export function formatSignedHours(ms: number): string {
+  const sign = ms < 0 ? '\u2212' : ms > 0 ? '+' : ''
+  return `${sign}${formatHours(Math.abs(ms))}`
+}
+
 /** Jours-homme, sur la base d'une journée pleine. */
 export function formatWorkDays(ms: number, targetMs: number): string {
   if (!targetMs) return ''
@@ -72,10 +90,41 @@ export const PRIORITY_LABEL: Record<string, string> = {
   low: 'Basse',
 }
 
-/** Une couleur par priorité, assez sobre pour ne pas noyer le reste. */
-export const PRIORITY_CLASS: Record<string, string> = {
-  urgent: 'bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30',
-  high: 'bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/30',
-  normal: 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30',
-  low: 'bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/30',
+/**
+ * Un point de 5 px, et RIEN pour normal et basse.
+ *
+ * La majorité des tâches sont en priorité normale : les colorier reviendrait à
+ * ne rien dire tout en occupant l'œil. Le libellé complet reste disponible en
+ * infobulle.
+ */
+export const PRIORITY_DOT: Record<string, string> = {
+  urgent: 'bg-urgent',
+  high: 'bg-attention',
 }
+
+/**
+ * Le ton d'un blocage, branché sur la table SEVERITY du domaine.
+ *
+ * 0 commentaire assigné · 1 échéance dépassée · 2 je bloque quelqu'un → urgent
+ * 3 travail non poussé · 4 ma revue attend                            → attention
+ * 5 sans activité · 6 dort sur recette                                → neutre
+ *
+ * Ça traîne n'est pas ça brûle : les deux derniers ne prennent pas de couleur.
+ */
+export function severityTone(severity: number): 'urgent' | 'attention' | 'muted' {
+  if (severity <= 2) return 'urgent'
+  if (severity <= 4) return 'attention'
+  return 'muted'
+}
+
+export const TONE_TEXT = {
+  urgent: 'text-urgent',
+  attention: 'text-attention',
+  muted: 'text-muted-foreground',
+} as const
+
+export const TONE_RAIL = {
+  urgent: 'before:bg-urgent',
+  attention: 'before:bg-attention',
+  muted: '',
+} as const

@@ -1,15 +1,8 @@
-import { Eye, EyeOff, RotateCcw, SlidersHorizontal } from 'lucide-react'
+import { Layers, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
 import { cn } from 'cn'
 import { pluralize } from '@/lib/format'
 import type { FieldUsage, ProjectCatalog, ProjectControls } from '@/lib/projects'
@@ -19,135 +12,172 @@ interface ProjectPickerProps {
   fields: FieldUsage[]
   preferences: ProjectControls
   hiddenCount: number
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 /**
- * Le choix de ce qu'on regarde.
+ * Le périmètre : ce qu'on regarde ce matin.
  *
- * Trois niveaux, du plus large au plus fin : les espaces ClickUp, les listes
- * qu'ils contiennent, et les champs affichés sur les cartes. Chaque ligne
- * porte son compteur — on masque en sachant ce qu'on perd.
+ * En popover et non en panneau latéral, et `modal={false}` : la page se
+ * redessine derrière pendant qu'on coche, donc on voit ce qu'on est en train de
+ * régler. Un panneau qui recouvre la moitié de l'écran ne le permet pas.
+ *
+ * On stocke ce qui est MASQUÉ, jamais ce qui est visible : une liste créée
+ * demain dans ClickUp apparaît d'elle-même, au lieu de rester invisible pour
+ * toujours et en silence.
  */
-export function ProjectPicker({ catalog, fields, preferences, hiddenCount }: ProjectPickerProps) {
+export function ProjectPicker({
+  catalog,
+  fields,
+  preferences,
+  hiddenCount,
+  open,
+  onOpenChange,
+}: ProjectPickerProps) {
   const { isEnvironmentVisible, isListVisible, isFieldVisible } = preferences
-  const nothingHidden =
-    preferences.preferences.hiddenEnvironments.length === 0 &&
-    preferences.preferences.hiddenLists.length === 0 &&
-    preferences.preferences.hiddenFields.length === 0
+
+  const listes = catalog.environments.flatMap((environment) => environment.lists)
+  const visibles = listes.filter(
+    (list) => isEnvironmentVisible(list.envKey) && isListVisible(list.envKey, list.name)
+  ).length
+  const partiel = visibles < listes.length
+  const bruyants = fields.filter((field) => field.noisy && isFieldVisible(field.name))
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
-          <SlidersHorizontal className="size-4" />
-          Projets
-          {hiddenCount > 0 && (
-            <span className="rounded-full bg-amber-500/20 px-1.5 text-[10px] font-medium text-amber-700 tabular-nums dark:text-amber-400">
-              −{hiddenCount}
-            </span>
-          )}
+    <Popover open={open} onOpenChange={onOpenChange} modal={false}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn('h-7 gap-1.5', partiel && 'border-urgent/40 text-foreground')}
+        >
+          <Layers className="size-3.5" />
+          Périmètre
+          <span className="text-muted-foreground tabular-nums">
+            {visibles}/{listes.length}
+          </span>
         </Button>
-      </SheetTrigger>
+      </PopoverTrigger>
 
-      <SheetContent className="flex w-full flex-col gap-0 sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>Projets affichés</SheetTitle>
-          <SheetDescription>
-            Ce qui est masqué reste collecté et archivé — vous pouvez le réafficher sans relancer de
-            collecte.
-          </SheetDescription>
-        </SheetHeader>
+      <PopoverContent align="end" className="w-[22rem] p-0">
+        <div className="flex h-9 items-center gap-2 border-b border-rule px-3 text-label">
+          <span className="font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+            Projets affichés
+          </span>
+          <button
+            type="button"
+            className="ml-auto text-muted-foreground hover:text-foreground"
+            onClick={preferences.reset}
+          >
+            Tout
+          </button>
+        </div>
 
-        <div className="flex-1 overflow-y-auto px-4 pb-4">
-          <ul className="space-y-4">
-            {catalog.environments.map((environment) => {
-              const visible = isEnvironmentVisible(environment.key)
+        <div className="max-h-[26rem] overflow-y-auto px-3 py-2">
+          {catalog.environments.map((environment) => {
+            const visible = isEnvironmentVisible(environment.key)
+            const masquees = environment.lists.filter(
+              (list) => !isListVisible(environment.key, list.name)
+            ).length
+            const partielEnv = visible && masquees > 0 && masquees < environment.lists.length
 
-              return (
-                <li key={environment.key}>
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id={`env-${environment.key}`}
-                      checked={visible}
-                      onCheckedChange={() => preferences.toggleEnvironment(environment.key)}
-                    />
-                    <label
-                      htmlFor={`env-${environment.key}`}
-                      className={cn(
-                        'flex-1 cursor-pointer text-sm font-medium',
-                        !visible && 'text-muted-foreground line-through decoration-1'
-                      )}
-                    >
-                      {environment.label}
-                    </label>
-                    <span className="text-xs text-muted-foreground tabular-nums">
-                      {environment.total}
-                      {environment.mine > 0 && ` · ${environment.mine} à moi`}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-1.5 text-[11px]"
-                      onClick={() => preferences.onlyEnvironment(catalog, environment.key)}
-                      title="N’afficher que celui-ci"
-                    >
-                      seul
-                    </Button>
-                  </div>
+            return (
+              <div key={environment.key} className="mb-2">
+                <div className="group/env flex h-7 items-center gap-2">
+                  <Checkbox
+                    id={`env-${environment.key}`}
+                    checked={partielEnv ? 'indeterminate' : visible}
+                    onCheckedChange={() => preferences.toggleEnvironment(environment.key)}
+                  />
+                  <label
+                    htmlFor={`env-${environment.key}`}
+                    className={cn(
+                      'flex-1 cursor-pointer truncate text-body font-medium',
+                      !visible && 'text-muted-foreground line-through decoration-1'
+                    )}
+                  >
+                    {environment.label}
+                  </label>
+                  <span className="text-label text-muted-foreground tabular-nums">
+                    {environment.total}
+                    {environment.mine > 0 && ` · ${environment.mine} à moi`}
+                  </span>
+                  <button
+                    type="button"
+                    className="text-label text-muted-foreground opacity-0 group-hover/env:opacity-100 hover:text-foreground"
+                    onClick={() => preferences.onlyEnvironment(catalog, environment.key)}
+                  >
+                    seul
+                  </button>
+                </div>
 
-                  {environment.lists.length > 0 && (
-                    <ul className={cn('mt-1.5 ml-6 space-y-1', !visible && 'opacity-40')}>
-                      {environment.lists.map((list) => {
-                        const listVisible = isListVisible(environment.key, list.name)
+                <div className={cn('ml-6', !visible && 'opacity-40')}>
+                  {environment.lists.map((list) => {
+                    const listeVisible = isListVisible(environment.key, list.name)
 
-                        return (
-                          <li key={list.key} className="flex items-center gap-2">
-                            <Checkbox
-                              id={`list-${list.key}`}
-                              checked={listVisible}
-                              disabled={!visible}
-                              onCheckedChange={() =>
-                                preferences.toggleList(environment.key, list.name)
-                              }
-                            />
-                            <label
-                              htmlFor={`list-${list.key}`}
-                              className={cn(
-                                'flex-1 cursor-pointer truncate text-xs',
-                                !listVisible && 'text-muted-foreground line-through decoration-1'
-                              )}
-                            >
-                              {list.name}
-                            </label>
-                            <span className="text-[11px] text-muted-foreground tabular-nums">
-                              {list.total}
-                            </span>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
+                    return (
+                      <div key={list.key} className="group/list flex h-7 items-center gap-2">
+                        <Checkbox
+                          id={`list-${list.key}`}
+                          checked={listeVisible}
+                          disabled={!visible}
+                          onCheckedChange={() => preferences.toggleList(environment.key, list.name)}
+                        />
+                        <label
+                          htmlFor={`list-${list.key}`}
+                          className={cn(
+                            'flex-1 cursor-pointer truncate text-body',
+                            !listeVisible && 'text-muted-foreground line-through decoration-1'
+                          )}
+                        >
+                          {list.name}
+                        </label>
+                        <span className="text-label text-muted-foreground tabular-nums">
+                          {list.total}
+                        </span>
+                        <button
+                          type="button"
+                          className="text-label text-muted-foreground opacity-0 group-hover/list:opacity-100 hover:text-foreground"
+                          onClick={() => preferences.onlyList(catalog, environment.key, list.name)}
+                        >
+                          seule
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
 
-          <Separator className="my-5" />
+          <Separator className="my-3" />
 
-          <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Champs sur les cartes
-          </h3>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            Un champ renseigné partout ne distingue aucune tâche : il alourdit chaque carte sans
-            l’informer. Ceux-là sont signalés.
+          <div className="flex items-center gap-2">
+            <span className="text-label font-semibold tracking-[0.08em] text-muted-foreground uppercase">
+              Champs sur les lignes
+            </span>
+            {bruyants.length > 0 && (
+              <button
+                type="button"
+                className="ml-auto text-label text-muted-foreground hover:text-foreground"
+                onClick={() => preferences.hideNoisyFields(fields)}
+              >
+                Masquer les peu utiles ({bruyants.length})
+              </button>
+            )}
+          </div>
+          <p className="mt-1 text-label text-muted-foreground">
+            Les deux champs les plus discriminants d’une tâche s’affichent sur sa ligne — un champ
+            renseigné partout tombe de lui-même en dernier.
           </p>
 
-          <ul className="mt-2 space-y-1">
+          <div className="mt-1.5">
             {fields.map((field) => {
               const visible = isFieldVisible(field.name)
 
               return (
-                <li key={field.name} className="flex items-center gap-2">
+                <div key={field.name} className="flex h-7 items-center gap-2">
                   <Checkbox
                     id={`field-${field.name}`}
                     checked={visible}
@@ -156,46 +186,39 @@ export function ProjectPicker({ catalog, fields, preferences, hiddenCount }: Pro
                   <label
                     htmlFor={`field-${field.name}`}
                     className={cn(
-                      'flex-1 cursor-pointer truncate text-xs',
+                      'flex-1 cursor-pointer truncate text-body',
                       !visible && 'text-muted-foreground line-through decoration-1'
                     )}
                   >
                     {field.name.trim()}
                   </label>
-                  {field.noisy && (
-                    <span className="rounded bg-amber-500/15 px-1 text-[10px] text-amber-700 dark:text-amber-400">
-                      peu utile
-                    </span>
-                  )}
-                  <span className="text-[11px] text-muted-foreground tabular-nums">
+                  {field.noisy && <span className="text-label text-attention">peu utile</span>}
+                  <span className="text-label text-muted-foreground tabular-nums">
                     {field.count} · {pluralize(field.distinct, 'valeur')}
                   </span>
-                </li>
+                </div>
               )
             })}
-          </ul>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 border-t px-4 py-3">
-          <span className="flex-1 text-xs text-muted-foreground">
-            {hiddenCount > 0 ? (
-              <>
-                <EyeOff className="mr-1 inline size-3.5 align-text-bottom" />
-                {pluralize(hiddenCount, 'tâche masquée', 'tâches masquées')}
-              </>
-            ) : (
-              <>
-                <Eye className="mr-1 inline size-3.5 align-text-bottom" />
-                Tout est affiché
-              </>
-            )}
+        <div className="flex items-center gap-2 border-t border-rule px-3 py-2 text-label">
+          <span className="flex-1 text-muted-foreground tabular-nums">
+            {hiddenCount > 0
+              ? `${pluralize(hiddenCount, 'tâche masquée', 'tâches masquées')}`
+              : 'Tout est affiché'}
           </span>
-          <Button variant="ghost" size="sm" disabled={nothingHidden} onClick={preferences.reset}>
-            <RotateCcw className="size-3.5" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-label"
+            onClick={preferences.reset}
+          >
+            <RotateCcw className="size-3" />
             Réinitialiser
           </Button>
         </div>
-      </SheetContent>
-    </Sheet>
+      </PopoverContent>
+    </Popover>
   )
 }

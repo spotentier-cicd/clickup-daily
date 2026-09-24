@@ -41,6 +41,21 @@ export type ReportStats = {
   durationMs: number
 }
 
+/**
+ * Les seuils qui ont servi au calcul.
+ *
+ * Ils voyagent avec le rapport pour que l'affichage puisse dire « sans activité
+ * depuis 20 j (seuil : 14) » sans recopier la configuration côté React — une
+ * copie qui se serait désynchronisée au premier ajustement.
+ */
+export type ReportThresholds = {
+  staleAfterDays: number
+  reviewWaitDays: number
+  recetteWaitDays: number
+  targetHoursPerDay: number
+  mentionsLookbackDays: number
+}
+
 export type ReportOf<D> = {
   generatedAt: D
   timezone: string
@@ -56,6 +71,7 @@ export type ReportOf<D> = {
   pointage: PointageOf<D> | null
   diff: ReportDiffOf<D>
   stats: ReportStats
+  thresholds: ReportThresholds
 }
 
 /** Ce que manipulent les règles. */

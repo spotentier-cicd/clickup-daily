@@ -48,3 +48,39 @@ export function findHighlights(haystack: string, keywords: string[]): string[] {
 
   return found
 }
+
+/**
+ * Abrège des libellés de colonnes en gardant chacun distinct.
+ *
+ * « Revue de code à faire » et « Revue code OK » commencent tous deux par
+ * « Revue » : tronquer au premier mot produirait deux étiquettes identiques
+ * avec deux compteurs différents, ce qui est pire que long. On ajoute donc des
+ * mots jusqu'à ce que chaque abréviation soit unique, et on saute les mots
+ * trop courts pour porter du sens.
+ */
+export function shortLabels(labels: string[]): Map<string, string> {
+  const resultat = new Map<string, string>()
+
+  for (const label of labels) {
+    const mots = label.split(/\s+/).filter(Boolean)
+    let court = label
+
+    for (let n = 1; n <= mots.length; n++) {
+      const candidat = mots.slice(0, n).join(' ')
+      if (candidat.length < 3) continue
+
+      /* Ne pas s'arrêter sur un mot vide : « Revue de » se lit mal, « Revue de code » non. */
+      if (mots[n - 1].length < 3 && n < mots.length) continue
+
+      const unique = labels.every((autre) => autre === label || !autre.startsWith(candidat))
+      if (unique || n === mots.length) {
+        court = candidat
+        break
+      }
+    }
+
+    resultat.set(label, court)
+  }
+
+  return resultat
+}

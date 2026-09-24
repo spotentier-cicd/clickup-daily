@@ -1,5 +1,5 @@
 import { test } from '@japa/runner'
-import { findHighlights, normalize } from '#domain/text'
+import { findHighlights, normalize, shortLabels } from '#domain/text'
 
 test.group('normalize', () => {
   test('retire accents, casse et espaces superflus', ({ assert }) => {
@@ -40,5 +40,39 @@ test.group('findHighlights', () => {
       'Vite',
     ])
     assert.deepEqual(findHighlights('Rien à voir', ['Laravel']), [])
+  })
+})
+
+test.group('shortLabels', () => {
+  test('garde chaque abréviation distincte', ({ assert }) => {
+    const labels = [
+      'Nouveau',
+      'À faire',
+      'Dev en cours',
+      'Revue de code à faire',
+      'Revue code OK',
+      'Déployé sur recette',
+    ]
+    const courts = [...shortLabels(labels).values()]
+
+    assert.lengthOf(new Set(courts), labels.length, 'aucune collision')
+    assert.deepEqual(courts, [
+      'Nouveau',
+      'À faire',
+      'Dev',
+      'Revue de code',
+      'Revue code',
+      'Déployé',
+    ])
+  })
+
+  test('ne s’arrête pas sur un mot vide', ({ assert }) => {
+    const courts = shortLabels(['Revue de code à faire', 'Revue code OK'])
+    assert.notInclude([...courts.values()], 'Revue de')
+  })
+
+  test('rend le libellé entier quand il n’y a pas mieux', ({ assert }) => {
+    const courts = shortLabels(['Dev en cours', 'Dev en cours final'])
+    assert.equal(courts.get('Dev en cours'), 'Dev en cours')
   })
 })

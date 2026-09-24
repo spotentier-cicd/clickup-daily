@@ -139,3 +139,67 @@
     @apply font-sans;
   }
 }
+
+/*
+| ——— Jetons propres au tableau de bord ————————————————————————————————————
+|
+| RÈGLE DE COULEUR : la couleur signale un COÛT, jamais une CATÉGORIE.
+| Trois teintes sémantiques, deux structurelles, et rien d'autre. Un bug est
+| une catégorie : il se signale par un glyphe, pas par du rouge.
+|
+| Pourquoi --urgent alors que --destructive existe : --destructive est calibré
+| comme FOND de bouton avec du texte clair dessus (≈4:1 sur blanc). --urgent
+| est calibré comme couleur de TEXTE et de FILET sur --background, et doit donc
+| tenir 4,5:1 à 11 px. On n'écrit jamais en --destructive sur cette page.
+|
+| Pourquoi --rule alors que --border existe : en sombre --border vaut
+| oklch(1 0 0 / 10%). Une page sans cartes ni ombres repose entièrement sur ses
+| filets ; un border-border/60 y atterrirait à 6 % de blanc, donc invisible.
+| Corollaire : on n'empile jamais un modificateur d'opacité sur une couleur
+| déjà alpha. Partout : border-rule / divide-rule.
+*/
+:root {
+  --urgent: oklch(0.52 0.2 27);
+  --attention: oklch(0.52 0.12 70);
+  --ok: oklch(0.5 0.11 158);
+  --rule: oklch(0.915 0 0);
+  --surface-urgent: oklch(0.968 0.022 27);
+}
+
+.dark {
+  --urgent: oklch(0.72 0.17 25);
+  --attention: oklch(0.8 0.13 78);
+  --ok: oklch(0.74 0.13 158);
+  --rule: oklch(1 0 0 / 14%);
+  --surface-urgent: oklch(0.255 0.048 25);
+}
+
+@theme inline {
+  --color-urgent: var(--urgent);
+  --color-attention: var(--attention);
+  --color-ok: var(--ok);
+  --color-rule: var(--rule);
+  --color-surface-urgent: var(--surface-urgent);
+}
+
+/*
+| ÉCHELLE TYPOGRAPHIQUE : cinq crans, trois graisses, rien d'autre.
+|
+| Déclarés en jetons pour qu'un text-[12.5px] écrit à la main saute aux yeux en
+| revue. Interdits : text-xs (12 px, le cran mort qui ne se distingue ni de 11
+| ni de 13), text-sm, text-base, la graisse 700 (à cette taille Geist bave),
+| l'italique, et toute taille sous 11 px.
+*/
+@theme {
+  --text-verdict: 1.75rem;
+  --text-verdict--line-height: 1;
+  --text-verdict--letter-spacing: -0.02em;
+  --text-figure: 1.0625rem;
+  --text-figure--line-height: 1;
+  --text-row: 0.9375rem;
+  --text-row--line-height: 1.35;
+  --text-body: 0.8125rem;
+  --text-body--line-height: 1.25rem;
+  --text-label: 0.6875rem;
+  --text-label--line-height: 1rem;
+}

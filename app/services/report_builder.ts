@@ -179,6 +179,13 @@ export class ReportBuilder {
       pointage,
       diff,
       stats,
+      thresholds: {
+        staleAfterDays: config.staleAfterDays,
+        reviewWaitDays: config.blockers.reviewWaitDays,
+        recetteWaitDays: config.blockers.recetteWaitDays,
+        targetHoursPerDay: config.temps.targetHoursPerDay,
+        mentionsLookbackDays: config.mentions.lookbackDays,
+      },
     }
   }
 
