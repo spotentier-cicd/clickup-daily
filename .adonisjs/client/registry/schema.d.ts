@@ -43,4 +43,16 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/refresh_controller').default['store']>>>
     }
   }
+  'preferences.projects': {
+    methods: ["PUT"]
+    pattern: '/preferences/projects'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/preferences_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/preferences_controller').default['update']>>>
+    }
+  }
 }

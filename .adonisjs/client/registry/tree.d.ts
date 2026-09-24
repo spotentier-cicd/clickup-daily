@@ -6,4 +6,7 @@ export interface ApiDefinition {
     archive: typeof routes['dashboard.archive']
   }
   refresh: typeof routes['refresh']
+  preferences: {
+    projects: typeof routes['preferences.projects']
+  }
 }

@@ -7,6 +7,7 @@ export type ScannedRoutes = {
     'dashboard': { paramsTuple?: []; params?: {} }
     'dashboard.archive': { paramsTuple: [ParamValue]; params: {'day': ParamValue} }
     'refresh': { paramsTuple?: []; params?: {} }
+    'preferences.projects': { paramsTuple?: []; params?: {} }
   }
   GET: {
     'dashboard': { paramsTuple?: []; params?: {} }
@@ -18,6 +19,9 @@ export type ScannedRoutes = {
   }
   POST: {
     'refresh': { paramsTuple?: []; params?: {} }
+  }
+  PUT: {
+    'preferences.projects': { paramsTuple?: []; params?: {} }
   }
 }
 declare module '@adonisjs/core/types/http' {

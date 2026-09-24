@@ -7,6 +7,21 @@
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
+export class PreferenceSchema extends BaseModel {
+  static $columns = ['createdAt', 'id', 'key', 'updatedAt', 'value'] as const
+  $columns = PreferenceSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare key: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare value: string
+}
+
 export class RunSchema extends BaseModel {
   static $columns = [
     'apiCalls',

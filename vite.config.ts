@@ -18,6 +18,8 @@ export default defineConfig({
     alias: {
       '~/': `${import.meta.dirname}/inertia/`,
       '@generated': `${import.meta.dirname}/.adonisjs/client/`,
+      /* Le domaine est pur : le navigateur partage le même code que le serveur. */
+      '#domain': `${import.meta.dirname}/app/domain`,
       '@': `${import.meta.dirname}/inertia`,
     },
   },
