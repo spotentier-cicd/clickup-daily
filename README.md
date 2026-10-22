@@ -4,7 +4,8 @@ Le point ClickUp du matin : ce qui bloque, ce qu'on doit relire, ce qui dort,
 ce qu'on n'a pas pointé — et la veille technique du jour.
 
 Un tableau de bord local, mono-utilisateur, en lecture seule sur ClickUp. Il ne
-modifie jamais vos tâches.
+modifie jamais vos tâches. La seule chose qu'on y écrit soi-même est son
+tableau personnel — et elle reste sur sa machine.
 
 ## Démarrer
 
@@ -67,7 +68,7 @@ node ace daily:report --no-veille --no-temps --no-mentions --no-enrich
 node ace claude:usage            # coût des conversations Claude Code du mois
 node ace claude:usage --verify   # contrôle la grille tarifaire (voir plus bas)
 npm run dev                      # serveur de développement
-npm run test                     # 176 tests unitaires, base isolée
+npm run test                     # 194 tests unitaires, base isolée
 npm run lint && npm run typecheck
 ```
 
@@ -165,6 +166,39 @@ explicite, pas le rapport du matin.
 | `DB_FILENAME` | Facultatif. Nom du fichier SQLite dans `tmp/`. |
 | `CLAUDE_TRANSCRIPTS_PATH` | Facultatif. Racine des transcriptions Claude Code. `~/.claude/projects` par défaut ; à renseigner en conteneur. |
 
+## Mon tableau
+
+L'onglet **Mon tableau** est un kanban à trois colonnes — *à faire*, *en
+cours*, *bloqué* — et c'est la seule partie de l'application qu'on remplit
+soi-même. Rien n'en repart vers ClickUp : c'est un bloc-notes de poste de
+travail, gardé dans la même base SQLite que les rapports.
+
+Une carte porte ce qu'il faut pour reprendre une tâche là où on l'a laissée :
+
+| | |
+|---|---|
+| le ticket | `ROC-1801`, pris dans ce que la collecte a ramené |
+| les branches | une pour le front, une pour le back, selon ce que le ticket touche |
+| le commentaire | où on en est, ce qu'on attend, ce qui bloque |
+
+**Taper une référence connue remplit le reste** : l'intitulé prend le nom du
+ticket s'il est encore vide, et les branches locales trouvées sur ce ticket se
+posent en un clic — du bon côté quand le nom du dépôt le dit. Le ticket n'est
+pas obligatoire : on note « relancer l'infra » avant qu'un ticket existe, et
+l'intitulé seul suffit alors.
+
+Une carte se déplace **à la souris** — elle s'affiche à la place qu'elle
+prendra pendant qu'on la glisse — ou **aux flèches ← →** de la carte, qui la
+passent à la colonne voisine. Un clic sur la référence ouvre la fiche du ticket
+sur place ; un clic sur un nom de branche le copie, prêt pour un `git
+checkout`.
+
+Une carte **survit à son ticket** : la tâche se ferme, sort du périmètre ou
+part en archive, la carte reste telle qu'on l'a écrite. C'est ce qui la
+distingue du reste du tableau de bord, qui n'est qu'un reflet de ClickUp. Il
+n'y a pas de colonne « terminé » : une carte finie se supprime, et la
+suppression se confirme dans la carte.
+
 ## Le coût des conversations Claude
 
 Le tableau affiche ce que vos conversations Claude Code ont coûté ce mois-ci, au
@@ -229,8 +263,8 @@ données, sans rien envoyer nulle part :
   C'est là que vivent les blocages, le pointage, le diff, le périmètre.
 - `app/services` — la collecte : ClickUp, git local, flux de veille,
   transcriptions Claude Code.
-- `app/controllers` — trois pages : le tableau, le paramétrage, le
-  rafraîchissement.
+- `app/controllers` — le tableau, le paramétrage, le rafraîchissement, et les
+  écritures du tableau personnel.
 - `inertia/` — React 19, Inertia, Tailwind v4.
 
 Chaque collecte est archivée : on peut rouvrir le rapport d'un jour passé.

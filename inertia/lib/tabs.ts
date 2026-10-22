@@ -1,4 +1,4 @@
-import { Bug, Circle, Newspaper, SunHorizon, User } from '@phosphor-icons/react'
+import { Bug, Circle, Kanban, Newspaper, SunHorizon, User } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import type { Task, Veille } from '@/lib/report'
 
@@ -6,9 +6,9 @@ import type { Task, Veille } from '@/lib/report'
 | LES ONGLETS DE LA COLONNE DE GAUCHE.
 |
 | « Aujourd'hui » n'est pas un filtre de tâches mais la synthèse du matin ;
-| « Veille » n'en est pas un non plus. Les deux se reconnaissent à leur
-| `filter` nul, et c'est ce qui décide du contenu de la zone principale — pas
-| une liste de clés citée en dur dans le rendu.
+| « Mon tableau » et « Veille » n'en sont pas non plus. Les trois se
+| reconnaissent à leur `filter` nul, et c'est ce qui décide du contenu de la
+| zone principale — pas une liste de clés citée en dur dans le rendu.
 |
 | Les espaces viennent du rapport : un quatrième espace ajouté à la
 | configuration apparaît dans la barre sans qu'on retouche ce fichier.
@@ -32,15 +32,18 @@ export interface BuildTabsOptions {
   envColors: Map<string, string>
   blockers: number
   veille: Veille | null
+  /** Cartes du tableau personnel : elles ne viennent d'aucune collecte. */
+  kanban: number
 }
 
 export function buildTabs(options: BuildTabsOptions): Tab[] {
-  const { visible, environments, envColors, blockers, veille } = options
+  const { visible, environments, envColors, blockers, veille, kanban } = options
 
   const count = (filter: (task: Task) => boolean) => visible.filter(filter).length
 
   const tabs: Tab[] = [
     { key: 'today', label: "Aujourd'hui", icon: SunHorizon, count: blockers, filter: null },
+    { key: 'kanban', label: 'Mon tableau', icon: Kanban, count: kanban, filter: null },
     {
       key: 'mine',
       label: 'Mes tâches',

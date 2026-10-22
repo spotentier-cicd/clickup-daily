@@ -5,6 +5,7 @@
 
 export const controllers = {
   Dashboard: () => import('#controllers/dashboard_controller'),
+  Kanban: () => import('#controllers/kanban_controller'),
   Preferences: () => import('#controllers/preferences_controller'),
   Refresh: () => import('#controllers/refresh_controller'),
   Settings: () => import('#controllers/settings_controller'),

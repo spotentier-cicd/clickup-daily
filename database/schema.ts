@@ -7,6 +7,48 @@
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
+export class KanbanCardSchema extends BaseModel {
+  static $columns = [
+    'branchBack',
+    'branchFront',
+    'columnKey',
+    'comment',
+    'createdAt',
+    'id',
+    'position',
+    'ref',
+    'taskId',
+    'title',
+    'updatedAt',
+    'url',
+  ] as const
+  $columns = KanbanCardSchema.$columns
+  @column()
+  declare branchBack: string
+  @column()
+  declare branchFront: string
+  @column()
+  declare columnKey: string
+  @column()
+  declare comment: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare position: number
+  @column()
+  declare ref: string
+  @column()
+  declare taskId: string
+  @column()
+  declare title: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare url: string
+}
+
 export class PreferenceSchema extends BaseModel {
   static $columns = ['createdAt', 'id', 'key', 'updatedAt', 'value'] as const
   $columns = PreferenceSchema.$columns

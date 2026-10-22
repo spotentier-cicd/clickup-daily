@@ -10,6 +10,7 @@ import { TaskList } from '@/components/task_list'
 import { TaskDetail } from '@/components/task_detail'
 import { TaskSheet } from '@/components/task_sheet'
 import { VeilleBoard } from '@/components/veille_board'
+import { KanbanBoard } from '@/components/kanban_board'
 import { columnsOf, dressTask, environmentColors } from '@/lib/board'
 import { followedListIds, followedSpaces } from '#domain/scope'
 import { matchesSearch } from '@/lib/filters'
@@ -24,14 +25,15 @@ import type {
   ProjectPreferences,
   ScopePreferences,
 } from '@/lib/projects'
+import type { KanbanCard } from '@/lib/kanban'
 import type { Report, VeilleArticle } from '@/lib/report'
 
 /*
 | LE TABLEAU DE BORD.
 |
 | Une colonne de navigation, une barre de commande, et une zone qui change de
-| nature selon l'onglet : la synthèse du matin, une liste de tâches avec son
-| panneau de détail, ou la veille.
+| nature selon l'onglet : la synthèse du matin, le tableau personnel, une liste
+| de tâches avec son panneau de détail, ou la veille.
 |
 | Tout le filtrage est UNE SEULE cascade, dans cet ordre : le périmètre (côté
 | serveur, persisté), puis la recherche et « mes tâches », puis l'onglet. Les
@@ -47,6 +49,8 @@ interface DashboardProps {
   preferences: ProjectPreferences
   /** Périmètre réglé dans /parametres : il porte le filtre par type de ticket. */
   scope: ScopePreferences
+  /** Le tableau personnel : la seule partie de la page qu'on remplit soi-même. */
+  kanban: KanbanCard[]
   days: { day: string; ranAt: string }[]
   day: string | null
   trigger: string | null
@@ -58,6 +62,7 @@ export default function Dashboard({
   fields,
   preferences,
   scope,
+  kanban,
   days,
   day,
 }: DashboardProps) {
@@ -170,8 +175,9 @@ export default function Dashboard({
         envColors,
         blockers: scoped?.blockers.length ?? 0,
         veille: report?.veille ?? null,
+        kanban: kanban.length,
       }),
-    [visible, report, environments, envColors, scoped]
+    [visible, report, environments, envColors, scoped, kanban]
   )
 
   if (!report || !scoped) return <EmptyState />
@@ -292,6 +298,16 @@ export default function Dashboard({
         )}
 
         <main className="mx-auto w-full max-w-[1760px] px-7 pt-[22px] pb-7">
+          {current.key === 'kanban' && (
+            <KanbanBoard
+              cards={kanban}
+              report={report}
+              tasks={scoped.tasks}
+              search={search}
+              onOpenTask={setOpenTask}
+            />
+          )}
+
           {current.key === 'veille' && report.veille && (
             <VeilleBoard
               veille={report.veille}

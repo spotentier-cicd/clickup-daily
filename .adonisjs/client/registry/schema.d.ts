@@ -55,6 +55,54 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/preferences_controller').default['update']>>>
     }
   }
+  'kanban.store': {
+    methods: ["POST"]
+    pattern: '/kanban'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/kanban_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/kanban_controller').default['store']>>>
+    }
+  }
+  'kanban.update': {
+    methods: ["PUT"]
+    pattern: '/kanban/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/kanban_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/kanban_controller').default['update']>>>
+    }
+  }
+  'kanban.move': {
+    methods: ["PUT"]
+    pattern: '/kanban/:id/move'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/kanban_controller').default['move']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/kanban_controller').default['move']>>>
+    }
+  }
+  'kanban.destroy': {
+    methods: ["DELETE"]
+    pattern: '/kanban/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/kanban_controller').default['destroy']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/kanban_controller').default['destroy']>>>
+    }
+  }
   'settings': {
     methods: ["GET","HEAD"]
     pattern: '/parametres'

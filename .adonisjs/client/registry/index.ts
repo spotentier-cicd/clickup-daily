@@ -30,6 +30,30 @@ const routes = {
     tokens: [{"old":"/preferences/projects","type":0,"val":"preferences","end":""},{"old":"/preferences/projects","type":0,"val":"projects","end":""}],
     types: placeholder as Registry['preferences.projects']['types'],
   },
+  'kanban.store': {
+    methods: ["POST"],
+    pattern: '/kanban',
+    tokens: [{"old":"/kanban","type":0,"val":"kanban","end":""}],
+    types: placeholder as Registry['kanban.store']['types'],
+  },
+  'kanban.update': {
+    methods: ["PUT"],
+    pattern: '/kanban/:id',
+    tokens: [{"old":"/kanban/:id","type":0,"val":"kanban","end":""},{"old":"/kanban/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['kanban.update']['types'],
+  },
+  'kanban.move': {
+    methods: ["PUT"],
+    pattern: '/kanban/:id/move',
+    tokens: [{"old":"/kanban/:id/move","type":0,"val":"kanban","end":""},{"old":"/kanban/:id/move","type":1,"val":"id","end":""},{"old":"/kanban/:id/move","type":0,"val":"move","end":""}],
+    types: placeholder as Registry['kanban.move']['types'],
+  },
+  'kanban.destroy': {
+    methods: ["DELETE"],
+    pattern: '/kanban/:id',
+    tokens: [{"old":"/kanban/:id","type":0,"val":"kanban","end":""},{"old":"/kanban/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['kanban.destroy']['types'],
+  },
   'settings': {
     methods: ["GET","HEAD"],
     pattern: '/parametres',

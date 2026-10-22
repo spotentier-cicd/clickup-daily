@@ -20,6 +20,12 @@ router.post('/refresh', [controllers.Refresh, 'store']).as('refresh')
 /* Choix des projets affichés. */
 router.put('/preferences/projects', [controllers.Preferences, 'update']).as('preferences.projects')
 
+/* Le tableau personnel : la seule partie du projet qu'on remplit soi-même. */
+router.post('/kanban', [controllers.Kanban, 'store']).as('kanban.store')
+router.put('/kanban/:id', [controllers.Kanban, 'update']).as('kanban.update')
+router.put('/kanban/:id/move', [controllers.Kanban, 'move']).as('kanban.move')
+router.delete('/kanban/:id', [controllers.Kanban, 'destroy']).as('kanban.destroy')
+
 /* Paramétrage : espaces ClickUp suivis et types de tickets affichés. */
 router.get('/parametres', [controllers.Settings, 'index']).as('settings')
 router.put('/preferences/scope', [controllers.Settings, 'update']).as('preferences.scope')

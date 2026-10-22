@@ -10,5 +10,11 @@ export interface ApiDefinition {
     projects: typeof routes['preferences.projects']
     scope: typeof routes['preferences.scope']
   }
+  kanban: {
+    store: typeof routes['kanban.store']
+    update: typeof routes['kanban.update']
+    move: typeof routes['kanban.move']
+    destroy: typeof routes['kanban.destroy']
+  }
   settings: typeof routes['settings']
 }
