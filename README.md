@@ -168,9 +168,9 @@ explicite, pas le rapport du matin.
 
 ## Mon tableau
 
-L'onglet **Mon tableau** est un kanban à trois colonnes — *à faire*, *en
-cours*, *bloqué* — et c'est la seule partie de l'application qu'on remplit
-soi-même. Rien n'en repart vers ClickUp : c'est un bloc-notes de poste de
+L'onglet **Mon tableau** est un kanban à cinq colonnes — *à faire*, *en
+cours*, *bloqué*, *à déployer*, *à tester* — et c'est la seule partie de
+l'application qu'on remplit soi-même. Rien n'en repart vers ClickUp : c'est un bloc-notes de poste de
 travail, gardé dans la même base SQLite que les rapports.
 
 Une carte porte ce qu'il faut pour reprendre une tâche là où on l'a laissée :
@@ -178,14 +178,16 @@ Une carte porte ce qu'il faut pour reprendre une tâche là où on l'a laissée 
 | | |
 |---|---|
 | le ticket | `ROC-1801`, pris dans ce que la collecte a ramené |
-| les branches | une pour le front, une pour le back, selon ce que le ticket touche |
+| les branches | `feature/ROC-1801`, côté front, côté back, ou les deux |
 | le commentaire | où on en est, ce qu'on attend, ce qui bloque |
 
 **Taper une référence connue remplit le reste** : l'intitulé prend le nom du
-ticket s'il est encore vide, et les branches locales trouvées sur ce ticket se
-posent en un clic — du bon côté quand le nom du dépôt le dit. Le ticket n'est
-pas obligatoire : on note « relancer l'infra » avant qu'un ticket existe, et
-l'intitulé seul suffit alors.
+ticket s'il est encore vide. Les branches ne s'écrivent pas — leur nom se
+déduit de la référence, `feature/ROC-1801`, et on ne coche que les côtés que
+le ticket touche. Quand la collecte a vu cette branche dans un dépôt local, le
+formulaire le dit. Le ticket n'est pas obligatoire : on note « relancer
+l'infra » avant qu'un ticket existe, et l'intitulé seul suffit alors — sans
+référence, il n'y a simplement pas de branche à cocher.
 
 Une carte se déplace **à la souris** — elle s'affiche à la place qu'elle
 prendra pendant qu'on la glisse — ou **aux flèches ← →** de la carte, qui la

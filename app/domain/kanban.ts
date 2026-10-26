@@ -1,9 +1,10 @@
 /*
 | LE TABLEAU PERSONNEL.
 |
-| Les trois états d'une journée de dev — à faire, en cours, bloqué — et ce
-| qu'on a besoin d'avoir sous les yeux pour reprendre une tâche : le ticket, la
-| branche front, la branche back, et la phrase qu'on se laisse à soi-même.
+| Les états d'une journée de dev — à faire, en cours, bloqué, à déployer, à
+| tester — et ce qu'on a besoin d'avoir sous les yeux pour reprendre une
+| tâche : le ticket, la branche front, la branche back, et la phrase qu'on se
+| laisse à soi-même.
 |
 | Rien ici ne vient de ClickUp. Une carte PEUT citer un ticket, et le tableau
 | sait alors ouvrir sa fiche, mais elle ne lui appartient pas : le ticket passe
@@ -20,6 +21,8 @@ export const KANBAN_COLUMNS = [
   { key: 'todo', label: 'À faire', color: 'var(--env-1)' },
   { key: 'doing', label: 'En cours', color: 'var(--amber)' },
   { key: 'blocked', label: 'Bloqué', color: 'var(--red)' },
+  { key: 'to_deploy', label: 'À déployer', color: 'var(--green)' },
+  { key: 'to_test', label: 'À tester', color: 'var(--env-2)' },
 ] as const
 
 export type KanbanColumn = (typeof KANBAN_COLUMNS)[number]
@@ -128,6 +131,22 @@ export function sanitizeCardInput(raw: unknown): KanbanCardInput {
  */
 export function isCardEmpty(input: KanbanCardInput): boolean {
   return !input.ref && !input.title
+}
+
+/**
+ * Le nom de la branche d'un ticket.
+ *
+ * Il ne se choisit pas : « feature/ » suivi de la référence, toujours. C'est
+ * ce qui permet à la carte de ne pas faire écrire ses branches mais seulement
+ * cocher lesquelles existent — on ne se trompe pas sur un nom qu'on ne tape
+ * pas, et la carte cite alors exactement ce que la collecte trouvera en local.
+ *
+ * La casse reste celle de la référence saisie : c'est le custom_id ClickUp qui
+ * fait foi, et c'est lui qu'on recopie en nommant la branche.
+ */
+export function branchFor(ref: string): string {
+  const trimmed = ref.trim()
+  return trimmed ? `feature/${trimmed}` : ''
 }
 
 /** Ce qu'on lit en tête de carte. */

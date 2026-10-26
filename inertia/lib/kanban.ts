@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import { router } from '@inertiajs/react'
 import { moveCard, sortCards } from '#domain/kanban'
 import type { KanbanCard, KanbanCardInput, KanbanColumnKey } from '#domain/kanban'
-import type { Report, Task } from '@/lib/report'
+import type { Task } from '@/lib/report'
 
 export type { KanbanCard, KanbanCardInput, KanbanColumnKey }
 
@@ -109,23 +109,4 @@ export function findTask(tasks: Task[], typed: string): Task | null {
     tasks.find((task) => task.ref.toLowerCase() === needle || task.id.toLowerCase() === needle) ??
     null
   )
-}
-
-/**
- * Les branches locales à proposer pour une carte.
- *
- * Celles du ticket d'abord : c'est sur elles que la main va. Le reste du
- * rapport suit, parce qu'une branche peut très bien ne pas porter la référence
- * dans son nom — et qu'on veut quand même pouvoir la choisir plutôt que la
- * retaper.
- */
-export function branchSuggestions(report: Report | null, taskId: string): string[] {
-  if (!report) return []
-
-  const mine = (report.branches[taskId] ?? []).map((branch) => branch.name)
-  const others = Object.values(report.branches)
-    .flat()
-    .map((branch) => branch.name)
-
-  return [...new Set([...mine, ...others])]
 }

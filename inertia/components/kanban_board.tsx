@@ -10,8 +10,8 @@ import {
   Trash,
   X,
 } from '@phosphor-icons/react'
-import { KANBAN_COLUMNS, cardsOfColumn, moveCard } from '#domain/kanban'
-import { branchSuggestions, findTask, matchesCard, useKanban } from '@/lib/kanban'
+import { KANBAN_COLUMNS, branchFor, cardsOfColumn, moveCard } from '#domain/kanban'
+import { findTask, matchesCard, useKanban } from '@/lib/kanban'
 import { tint } from '@/lib/board'
 import { REF } from '@/lib/styles'
 import type { Icon } from '@phosphor-icons/react'
@@ -21,8 +21,9 @@ import type { Report, Task } from '@/lib/report'
 /*
 | LE TABLEAU PERSONNEL.
 |
-| Trois colonnes, et la seule partie de l'application qu'on remplit soi-même :
-| ce qu'on a à faire, ce qu'on a ouvert, ce qui attend quelqu'un d'autre. Une
+| Les colonnes du workflow, et la seule partie de l'application qu'on remplit
+| soi-même : ce qu'on a à faire, ce qu'on a ouvert, ce qui attend quelqu'un
+| d'autre, ce qui attend sa mise en production, ce qui est à recetter. Une
 | carte porte ce qu'il faut pour reprendre le travail là où on l'a laissé — le
 | ticket, les deux branches, et la phrase qu'on se laisse à soi-même — parce
 | que c'est précisément ce qu'on perd entre le vendredi soir et le lundi matin.
@@ -85,7 +86,7 @@ export function KanbanBoard({ cards, report, tasks, search, onOpenTask }: Kanban
   }
 
   return (
-    <div className="grid grid-cols-1 items-start gap-[18px] md:grid-cols-3">
+    <div className="grid grid-cols-1 items-start gap-[18px] md:grid-cols-3 xl:grid-cols-5">
       {KANBAN_COLUMNS.map((column) => {
         const list = cardsOfColumn(shown, column.key).filter((card) => matchesCard(card, search))
         const total = cardsOfColumn(board.cards, column.key).length
@@ -515,8 +516,8 @@ interface CardFormProps {
  * Le formulaire d'une carte, à la création comme à la modification.
  *
  * Taper une référence connue remplit le reste : l'intitulé prend le nom du
- * ticket s'il est encore vide, et les branches que la collecte a trouvées sur
- * ce ticket se posent en un clic, du bon côté quand le nom du dépôt le dit.
+ * ticket s'il est encore vide, et les deux branches se déduisent de la
+ * référence — on ne dit que de quels côtés le ticket touche.
  */
 function CardForm({ card, column, tasks, report, onSubmit, onCancel }: CardFormProps) {
   const [draft, setDraft] = useState<Omit<KanbanCardInput, 'column'>>(() =>
@@ -538,27 +539,36 @@ function CardForm({ card, column, tasks, report, onSubmit, onCancel }: CardFormP
   useEffect(() => field.current?.focus(), [])
 
   const task = findTask(tasks, draft.ref)
-  const local = task && report ? (report.branches[task.id] ?? []) : []
-  const suggestions = branchSuggestions(report, task?.id ?? draft.taskId)
+  const branch = branchFor(draft.ref)
   const ready = Boolean(draft.ref.trim() || draft.title.trim())
+
+  /* Les dépôts où cette branche existe vraiment : la collecte les a déjà vus. */
+  const local = task && report ? (report.branches[task.id] ?? []) : []
+  const repos = [
+    ...new Set(local.filter((entry) => entry.name === branch).map((entry) => entry.repo)),
+  ]
 
   const set = (patch: Partial<typeof draft>) => setDraft((current) => ({ ...current, ...patch }))
 
   /* Un ticket reconnu apporte son identifiant, son lien, et son nom si rien n'est écrit. */
   const onRef = (value: string) => {
     const found = findTask(tasks, value)
+    const name = branchFor(value)
     set({
       ref: value,
       taskId: found?.id ?? '',
       url: found?.url ?? '',
       title: !draft.title.trim() && found ? found.name : draft.title,
+      /* Les côtés cochés suivent la référence : la branche n'est que son nom. */
+      branchFront: draft.branchFront ? name : '',
+      branchBack: draft.branchBack ? name : '',
     })
   }
 
-  /* Une branche proposée va du côté que son dépôt suggère, sinon dans le champ libre. */
-  const take = (repo: string, name: string) => {
-    const side = sideOf(repo) ?? (draft.branchFront ? 'back' : 'front')
-    set(side === 'front' ? { branchFront: name } : { branchBack: name })
+  /* Cocher, c'est écrire le nom ; décocher, c'est l'effacer. Il n'y a rien à saisir. */
+  const toggle = (side: 'front' | 'back') => {
+    const key = side === 'front' ? 'branchFront' : 'branchBack'
+    set({ [key]: draft[key] ? '' : branch })
   }
 
   const submit = () => {
@@ -595,12 +605,6 @@ function CardForm({ card, column, tasks, report, onSubmit, onCancel }: CardFormP
           </option>
         ))}
       </datalist>
-      <datalist id={`${id}-branches`}>
-        {suggestions.map((name) => (
-          <option key={name} value={name} />
-        ))}
-      </datalist>
-
       <input
         ref={field}
         className="input"
@@ -628,44 +632,27 @@ function CardForm({ card, column, tasks, report, onSubmit, onCancel }: CardFormP
       />
 
       <div className="grid grid-cols-2 gap-[6px]">
-        <input
-          className="input"
-          style={{ minHeight: 30, fontFamily: 'var(--mono)', fontSize: 12 }}
-          list={`${id}-branches`}
-          placeholder="branche front"
-          value={draft.branchFront}
-          onChange={(event) => set({ branchFront: event.target.value })}
+        <BranchBox
+          side="front"
+          name={draft.branchFront || branch}
+          checked={Boolean(draft.branchFront)}
+          onToggle={() => toggle('front')}
         />
-        <input
-          className="input"
-          style={{ minHeight: 30, fontFamily: 'var(--mono)', fontSize: 12 }}
-          list={`${id}-branches`}
-          placeholder="branche back"
-          value={draft.branchBack}
-          onChange={(event) => set({ branchBack: event.target.value })}
+        <BranchBox
+          side="back"
+          name={draft.branchBack || branch}
+          checked={Boolean(draft.branchBack)}
+          onToggle={() => toggle('back')}
         />
       </div>
 
-      {local.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1 px-1">
-          <span style={{ font: '400 11px var(--font-body)', color: 'var(--faint)' }}>
-            trouvées en local :
-          </span>
-          {local.map((branch) => (
-            <button
-              key={`${branch.repo}/${branch.name}`}
-              type="button"
-              onClick={() => take(branch.repo, branch.name)}
-              title={`${branch.repo} · ${branch.name}`}
-              className="tag hoverable max-w-full cursor-pointer border-0"
-              style={{ background: 'var(--soft)', color: 'var(--muted)', fontSize: 10.5 }}
-            >
-              <span className="truncate" style={{ fontFamily: 'var(--mono)' }}>
-                {branch.name}
-              </span>
-            </button>
-          ))}
-        </div>
+      {repos.length > 0 && (
+        <span
+          className="truncate px-1"
+          style={{ font: '400 11px var(--font-body)', color: 'var(--faint)' }}
+        >
+          trouvée en local : {repos.join(' · ')}
+        </span>
       )}
 
       <textarea
@@ -702,14 +689,62 @@ function CardForm({ card, column, tasks, report, onSubmit, onCancel }: CardFormP
 }
 
 /**
- * De quel côté une branche tombe, d'après le nom de son dépôt.
+ * Une branche, cochée plutôt qu'écrite.
  *
- * Une devinette, et elle se corrige d'un clic : le pire qu'elle risque est de
- * proposer « front » là où on voulait « back ».
+ * Son nom ne se discute pas — « feature/ » suivi de la référence — donc le
+ * seul choix qui reste est de savoir si le ticket touche le front, le back ou
+ * les deux. Un champ libre n'aurait servi qu'à y faire des fautes de frappe,
+ * et une branche mal orthographiée sur une carte est une branche qu'on ne
+ * retrouve pas lundi matin.
+ *
+ * Sans référence, il n'y a pas de nom à cocher : la case attend qu'on ait dit
+ * de quel ticket il s'agit.
  */
-function sideOf(repo: string): 'front' | 'back' | null {
-  const name = repo.toLowerCase()
-  if (/front|web|ui|client|app/.test(name)) return 'front'
-  if (/back|api|server|srv|core/.test(name)) return 'back'
-  return null
+function BranchBox({
+  side,
+  name,
+  checked,
+  onToggle,
+}: {
+  side: 'front' | 'back'
+  name: string
+  checked: boolean
+  onToggle: () => void
+}) {
+  return (
+    <label
+      title={name ? `${side} · ${name}` : 'Renseignez d’abord le ticket'}
+      className="flex min-w-0 items-center gap-[6px] px-2 py-[6px]"
+      style={{
+        borderRadius: 6,
+        background: checked ? tint('var(--color-accent)', 10) : 'var(--soft)',
+        cursor: name ? 'pointer' : 'default',
+        opacity: name ? 1 : 0.5,
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={!name}
+        onChange={onToggle}
+        className="shrink-0 cursor-[inherit]"
+        style={{ accentColor: 'var(--color-accent)' }}
+      />
+      <GitBranch size={12} className="shrink-0" style={{ color: 'var(--faint)' }} />
+      <span
+        className="shrink-0"
+        style={{
+          font: '500 10px var(--font-body)',
+          letterSpacing: '.06em',
+          textTransform: 'uppercase',
+          color: 'var(--faint)',
+        }}
+      >
+        {side}
+      </span>
+      <span className="truncate" style={{ font: '400 11.5px var(--mono)', color: 'var(--muted)' }}>
+        {name}
+      </span>
+    </label>
+  )
 }

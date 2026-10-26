@@ -1,5 +1,6 @@
 import { test } from '@japa/runner'
 import {
+  branchFor,
   cardsOfColumn,
   isCardEmpty,
   moveCard,
@@ -128,5 +129,12 @@ test.group('Tableau personnel — ce qui entre en base', () => {
     assert.isTrue(isCardEmpty(sanitizeCardInput({ column: 'todo', comment: 'juste une note' })))
     assert.isFalse(isCardEmpty(sanitizeCardInput({ column: 'todo', ref: 'ROC-1' })))
     assert.isFalse(isCardEmpty(sanitizeCardInput({ column: 'todo', title: 'Relancer l’infra' })))
+  })
+
+  test('la branche porte le nom du ticket, et rien sans ticket', ({ assert }) => {
+    assert.equal(branchFor('ROCND-1311'), 'feature/ROCND-1311')
+    assert.equal(branchFor('  ROCND-1311  '), 'feature/ROCND-1311')
+    assert.equal(branchFor(''), '')
+    assert.equal(branchFor('   '), '')
   })
 })
