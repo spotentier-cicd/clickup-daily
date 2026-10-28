@@ -18,7 +18,7 @@ export const CARD: CSSProperties = {
   background: 'var(--color-surface)',
   border: '1px solid var(--color-divider)',
   borderRadius: 12,
-  boxShadow: '0 1px 2px rgb(28 27 75 / 0.04)',
+  boxShadow: 'var(--shadow-card)',
   padding: '16px 20px 18px',
 }
 

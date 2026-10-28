@@ -29,39 +29,30 @@
     </script>
 
     <style>
+      /*
+        Les mêmes jetons que l'application, dans la même forme : une valeur
+        claire, une valeur sombre, et color-scheme qui tranche. Ils sont
+        recopiés ici parce que cette page ne peut dépendre d'aucun fichier —
+        c'est le prix de son autonomie.
+      */
       :root {
-        --bg: #f3f4f8;
-        --surface: #ffffff;
-        --title: #16135e;
-        --text: #1c2040;
-        --muted: #5d6180;
-        --line: #e3e5ee;
-        --accent: #4a54b8;
+        color-scheme: light dark;
+        --bg: light-dark(#f3f4f8, #181d37);
+        --surface: light-dark(#ffffff, #2c314a);
+        --title: light-dark(#16135e, #ffffff);
+        --text: light-dark(#1c2040, #e1e4f1);
+        --muted: light-dark(#5d6180, #a1a7bb);
+        --line: light-dark(#e3e5ee, #4a5068);
+        --accent: light-dark(#4a54b8, #9aa8f4);
+        --ombre: light-dark(rgb(28 27 75 / 0.04), rgb(0 0 0 / 0.32));
+      }
+
+      :root[data-theme='light'] {
         color-scheme: light;
       }
 
       :root[data-theme='dark'] {
-        --bg: #151936;
-        --surface: #1e2450;
-        --title: #ffffff;
-        --text: #e7e9f6;
-        --muted: #a9afd4;
-        --line: #333a68;
-        --accent: #aeb5ee;
         color-scheme: dark;
-      }
-
-      @media (prefers-color-scheme: dark) {
-        :root:not([data-theme]) {
-          --bg: #151936;
-          --surface: #1e2450;
-          --title: #ffffff;
-          --text: #e7e9f6;
-          --muted: #a9afd4;
-          --line: #333a68;
-          --accent: #aeb5ee;
-          color-scheme: dark;
-        }
       }
 
       body {
@@ -94,7 +85,7 @@
         border: 1px solid var(--line);
         border-left: 3px solid var(--accent);
         border-radius: 12px;
-        box-shadow: 0 1px 2px rgb(28 27 75 / 0.04);
+        box-shadow: 0 1px 2px var(--ombre);
       }
 
       .kicker {

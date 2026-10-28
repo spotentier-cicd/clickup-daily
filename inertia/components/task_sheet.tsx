@@ -75,7 +75,7 @@ export function TaskSheet({ dressed, column, onClose }: TaskSheetProps) {
   return (
     <div
       className="fixed inset-0 z-50 flex justify-end"
-      style={{ background: 'color-mix(in srgb, var(--color-neutral-900) 55%, transparent)' }}
+      style={{ background: 'color-mix(in srgb, var(--scrim) 55%, transparent)' }}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose()
       }}

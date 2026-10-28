@@ -3,72 +3,82 @@
 @import '@fontsource-variable/jetbrains-mono';
 
 /*
-| ——— NOTCH ————————————————————————————————————————————————————————————————
+| ——— LA PALETTE ———————————————————————————————————————————————————————————
 |
-| Le système de design repris de la maquette « sans rail, sélecteur de module
-| dans le notch du haut ».
+| Un seul tableau. Chaque jeton donne sa valeur CLAIRE puis sa valeur SOMBRE
+| sur la même ligne, et c'est light-dark() qui choisit — d'après le
+| color-scheme de la racine, la seule chose que le thème change.
 |
-| Trois surfaces, et c'est tout le vocabulaire :
-|   — la BARRE, bleu nuit, pleine largeur, qui ne porte que ce qui vaut pour
-|     l'application entière (périmètre, recherche, moi) ;
-|   — le NOTCH, blanc, centré, accroché sous la barre, qui dit où on est et
-|     où on peut aller ;
-|   — le PLAN, gris très clair, sur lequel flottent des cartes blanches.
+| Trois états, une règle :
+|   — choix explicite → [data-theme=light|dark] fixe le color-scheme ;
+|   — réglage système → aucun attribut, et « light dark » laisse la main à
+|     prefers-color-scheme.
+| Aucune couleur n'est donc définie dans un bloc @media, et surtout aucune
+| n'est écrite deux fois : les deux thèmes ne peuvent plus diverger.
 |
-| Le CLAIR est la définition de base : c'est l'état dans lequel la maquette a
-| été calibrée. Le sombre est une reprise complète, jamais un assombrissement.
+| LE SOMBRE N'EST PAS UN CLAIR ASSOMBRI.
 |
-| Trois états de thème, une seule règle pour les trois :
-|   — choix explicite  → [data-theme=light|dark] sur <html>, qui gagne toujours ;
-|   — réglage système  → aucun attribut, et prefers-color-scheme décide.
-| Aucune couleur n'a donc sa seule définition dans un bloc @media.
+| Il est construit sur le même empilement de trois surfaces que la maquette —
+| la BARRE, le PLAN, la CARTE — mais chacune doit y être un cran PLUS CLAIRE
+| que la précédente, là où en clair c'est l'inverse. Les crans visés, mesurés
+| en rapport de luminance : 1,18 de la barre au plan, 1,30 du plan à la carte,
+| 1,60 de la carte à son filet. En dessous, une carte cesse d'être un objet
+| posé sur un plan et redevient un rectangle à peine plus pâle.
+|
+| Et les couleurs y sont REMONTÉES EN CLARTÉ, pas réutilisées : un bleu de
+| module à 42 % de clarté se lit sur du blanc, pas sur du bleu nuit. Toutes
+| les valeurs sombres sont donc calculées en oklch à clarté imposée — autour
+| de 0,74 pour les couleurs porteuses de sens, 0,16 à 0,44 pour les surfaces —
+| en gardant la teinte de leur jumelle claire, pour qu'un espace garde sa
+| couleur d'un thème à l'autre.
 */
 :root {
-  /* Les trois surfaces. */
-  --color-bg: #f3f4f8;
-  --color-surface: #ffffff;
-  --color-nav: #161c4a;
-  --color-nav-raised: #232a63;
-  --color-nav-line: #3a4285;
-  --color-nav-dim: #c9cde6;
+  color-scheme: light dark;
+
+  /* Les trois surfaces, du fond vers l'avant. */
+  --color-nav: light-dark(#161c4a, #070828);
+  --color-bg: light-dark(#f3f4f8, #181d37);
+  --color-surface: light-dark(#ffffff, #2c314a);
+
+  /* Ce qui se détache DANS la barre. */
+  --color-nav-raised: light-dark(#232a63, #283060);
+  --color-nav-line: light-dark(#3a4285, #464f7c);
+  --color-nav-dim: light-dark(#c9cde6, #adb3cb);
   /* La gélule de recherche : elle doit se détacher de la barre, pas s'y fondre. */
-  --color-pill: #ffffff;
+  --color-pill: light-dark(#ffffff, #2c3354);
 
   /* L'encre. Le titre est plus foncé et plus violet que le texte courant. */
-  --color-text: #1c2040;
-  --color-title: #16135e;
-  --color-accent: #4a54b8;
-  --color-accent-soft: #eceefb;
-  --color-divider: #e3e5ee;
+  --color-text: light-dark(#1c2040, #e1e4f1);
+  --color-title: light-dark(#16135e, #ffffff);
+  --color-accent: light-dark(#4a54b8, #9aa8f4);
+  --color-accent-soft: light-dark(#eceefb, #2e3560);
 
-  --color-neutral-100: #f8f9fc;
-  --color-neutral-200: #f3f4f8;
-  --color-neutral-300: #e9eaf2;
-  --color-neutral-400: #d3d5e0;
-  --color-neutral-500: #8a8fa8;
-  --color-neutral-600: #5d6180;
-  --color-neutral-700: #454a6b;
-  --color-neutral-800: #2b2f55;
-  --color-neutral-900: #16135e;
+  /* Les deux filets : celui des cartes, et celui qui répond au survol. */
+  --color-divider: light-dark(#e3e5ee, #4a5068);
+  --color-line-strong: light-dark(#d3d5e0, #62687e);
 
-  --color-accent-100: #f5f5fd;
-  --color-accent-200: #eceefb;
-  --color-accent-300: #d6daf6;
-  --color-accent-400: #aeb5ee;
-  --color-accent-500: #7e88d8;
-  --color-accent-600: #4a54b8;
-  --color-accent-700: #3b438f;
-  --color-accent-800: #2c3270;
-  --color-accent-900: #1d2150;
+  /* Le voile derrière la fiche en superposition. */
+  --scrim: light-dark(#16135e, #020210);
 
   /*
-  | Trois profondeurs : posé, détaché, flottant. Le filet d'un pixel fait
-  | partie de l'ombre — une carte blanche sur un plan gris très clair n'existe
-  | pas sans lui.
+  | Quatre profondeurs : posé, détaché, flottant, soulevé au survol.
+  |
+  | En clair, le filet d'un pixel fait l'essentiel du travail — une carte
+  | blanche sur un plan gris très clair n'existe pas sans lui. En sombre,
+  | c'est l'ombre portée : un filet ne suffit pas à décoller une carte d'un
+  | fond déjà foncé, et une ombre teintée de bleu nuit y est invisible.
   */
-  --shadow-sm: 0 0 0 1px #e9eaf2, 0 1px 2px rgb(28 27 75 / 0.04);
-  --shadow-md: 0 0 0 1px #e3e5ee, 0 10px 24px rgb(28 27 75 / 0.1);
-  --shadow-lg: 0 16px 40px rgb(22 28 74 / 0.2), 0 2px 6px rgb(22 28 74 / 0.08);
+  --shadow-card: 0 1px 2px light-dark(rgb(28 27 75 / 0.04), rgb(0 0 0 / 0.32));
+  --shadow-sm:
+    0 0 0 1px light-dark(#e9eaf2, #3f4560),
+    0 1px 2px light-dark(rgb(28 27 75 / 0.04), rgb(0 0 0 / 0.32));
+  --shadow-md:
+    0 0 0 1px light-dark(#e3e5ee, #4a5068),
+    0 10px 24px light-dark(rgb(28 27 75 / 0.1), rgb(0 0 0 / 0.5));
+  --shadow-lg:
+    0 16px 40px light-dark(rgb(22 28 74 / 0.2), rgb(0 0 0 / 0.66)),
+    0 2px 6px light-dark(rgb(22 28 74 / 0.08), rgb(0 0 0 / 0.5));
+  --shadow-lift: 0 10px 24px light-dark(rgb(28 27 75 / 0.12), rgb(0 0 0 / 0.5));
 
   --font-heading: 'Quicksand Variable', 'Quicksand', system-ui, sans-serif;
   --font-body: 'Quicksand Variable', 'Quicksand', system-ui, sans-serif;
@@ -80,161 +90,54 @@
   | une catégorie : il se signale par un glyphe. Les quatre gris sont
   | structurels et se lisent tous sur --color-bg comme sur --color-surface.
   */
-  --red: #d14343;
-  --amber: #c2690f;
-  --green: #0e7468;
-  --muted: #5d6180;
-  --faint: #8a8fa8;
-  --soft: #f3f4f8;
+  --red: light-dark(#d14343, #f87e77);
+  --amber: light-dark(#c2690f, #f9aa60);
+  --green: light-dark(#0e7468, #56d0af);
+  --muted: light-dark(#5d6180, #a1a7bb);
+  --faint: light-dark(#8a8fa8, #898ea2);
+  --soft: light-dark(#f3f4f8, #393f59);
 
   /* La teinte qui dit « c'est à moi », assez pâle pour passer sous du texte. */
-  --mine: #f3f3fc;
-  --ref: #4f3fb8;
-  --tint: #eceefb;
-  --tint-ink: #3b438f;
-  --prio-n: #d3d5e0;
+  --mine: light-dark(#f3f3fc, #393965);
+  --ref: light-dark(#4f3fb8, #b2b1f4);
+  --tint: light-dark(#eceefb, #313867);
+  --tint-ink: light-dark(#3b438f, #c5cff9);
+  --prio-n: light-dark(#d3d5e0, #575a66);
+
+  /*
+  | LES MODULES du notch. Ils sont ici et pas dans lib/modules.ts : une
+  | couleur écrite en dur dans le TypeScript ne connaît qu'un seul thème, et
+  | le bleu du module « Tâches » devenait illisible sur fond sombre.
+  */
+  --mod-tasks: light-dark(#0b4f8a, #6faff4);
+  --mod-board: light-dark(#6941c6, #ab9bf6);
+  --mod-watch: light-dark(#a84d0d, #f69f72);
 
   /*
   | Les espaces ClickUp n'ont pas de couleur en configuration : cinq teintes
   | fixes leur sont distribuées dans l'ordre, ce qui donne la même couleur au
   | même espace d'un jour à l'autre sans rien avoir à déclarer. Ce sont les
-  | mêmes cinq teintes que les modules de la maquette.
+  | mêmes cinq teintes que les modules de la maquette, et la même TEINTE d'un
+  | thème à l'autre — seule la clarté change.
   */
-  --env-1: #0b4f8a;
-  --env-2: #6941c6;
-  --env-3: #0e7468;
-  --env-4: #a84d0d;
-  --env-5: #b42318;
-
-  color-scheme: light;
+  --env-1: light-dark(#0b4f8a, #6faff4);
+  --env-2: light-dark(#6941c6, #ab9bf6);
+  --env-3: light-dark(#0e7468, #65ccbc);
+  --env-4: light-dark(#a84d0d, #f69f72);
+  --env-5: light-dark(#b42318, #ef8070);
 }
 
 /*
-| Le sombre. La barre reste la surface la plus foncée de la page : c'est ce
-| qui garde le notch lisible comme une découpe, et pas comme un bloc posé.
+| Le choix explicite, et lui seul : il fige le color-scheme, et light-dark()
+| suit. « auto » ne pose PAS d'attribut — c'est l'absence qui laisse la main
+| à prefers-color-scheme.
 */
-:root[data-theme='dark'] {
-  --color-bg: #151936;
-  --color-surface: #1e2450;
-  --color-nav: #0c1030;
-  --color-nav-raised: #232a63;
-  --color-nav-line: #3a4285;
-  --color-nav-dim: #a9afd4;
-  --color-pill: #2b3372;
-
-  --color-text: #e7e9f6;
-  --color-title: #ffffff;
-  --color-accent: #aeb5ee;
-  --color-accent-soft: #2c3270;
-  --color-divider: #333a68;
-
-  --color-neutral-100: #f8f9fc;
-  --color-neutral-200: #d6daf6;
-  --color-neutral-300: #aeb5ee;
-  --color-neutral-400: #8d93c2;
-  --color-neutral-500: #6f74a0;
-  --color-neutral-600: #585e8c;
-  --color-neutral-700: #3f4573;
-  --color-neutral-800: #2c3270;
-  --color-neutral-900: #1d2150;
-
-  --color-accent-100: #f5f5fd;
-  --color-accent-200: #d6daf6;
-  --color-accent-300: #aeb5ee;
-  --color-accent-400: #8d93c2;
-  --color-accent-500: #6f74a0;
-  --color-accent-600: #585e8c;
-  --color-accent-700: #3f4573;
-  --color-accent-800: #2c3270;
-  --color-accent-900: #1d2150;
-
-  --shadow-sm: 0 0 0 1px #333a68;
-  --shadow-md: 0 0 0 1px #3f4573, 0 10px 24px rgb(0 0 0 / 0.45);
-  --shadow-lg: 0 16px 40px rgb(0 0 0 / 0.6), 0 0 0 1px #3f4573;
-
-  --red: #ff8c80;
-  --amber: #f0b45c;
-  --green: #6fd6c0;
-  --muted: #a9afd4;
-  --faint: #767ca6;
-  --soft: #272e5e;
-
-  --mine: #262c62;
-  --ref: #aeb5ee;
-  --tint: #2c3270;
-  --tint-ink: #d6daf6;
-  --prio-n: #3f4573;
-
-  --env-1: #6fb2ef;
-  --env-2: #b79bf5;
-  --env-3: #6fd6c0;
-  --env-4: #efb173;
-  --env-5: #ff8c80;
-
-  color-scheme: dark;
+:root[data-theme='light'] {
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) {
-    --color-bg: #151936;
-    --color-surface: #1e2450;
-    --color-nav: #0c1030;
-    --color-nav-raised: #232a63;
-    --color-nav-line: #3a4285;
-    --color-nav-dim: #a9afd4;
-    --color-pill: #2b3372;
-
-    --color-text: #e7e9f6;
-    --color-title: #ffffff;
-    --color-accent: #aeb5ee;
-    --color-accent-soft: #2c3270;
-    --color-divider: #333a68;
-
-    --color-neutral-100: #f8f9fc;
-    --color-neutral-200: #d6daf6;
-    --color-neutral-300: #aeb5ee;
-    --color-neutral-400: #8d93c2;
-    --color-neutral-500: #6f74a0;
-    --color-neutral-600: #585e8c;
-    --color-neutral-700: #3f4573;
-    --color-neutral-800: #2c3270;
-    --color-neutral-900: #1d2150;
-
-    --color-accent-100: #f5f5fd;
-    --color-accent-200: #d6daf6;
-    --color-accent-300: #aeb5ee;
-    --color-accent-400: #8d93c2;
-    --color-accent-500: #6f74a0;
-    --color-accent-600: #585e8c;
-    --color-accent-700: #3f4573;
-    --color-accent-800: #2c3270;
-    --color-accent-900: #1d2150;
-
-    --shadow-sm: 0 0 0 1px #333a68;
-    --shadow-md: 0 0 0 1px #3f4573, 0 10px 24px rgb(0 0 0 / 0.45);
-    --shadow-lg: 0 16px 40px rgb(0 0 0 / 0.6), 0 0 0 1px #3f4573;
-
-    --red: #ff8c80;
-    --amber: #f0b45c;
-    --green: #6fd6c0;
-    --muted: #a9afd4;
-    --faint: #767ca6;
-    --soft: #272e5e;
-
-    --mine: #262c62;
-    --ref: #aeb5ee;
-    --tint: #2c3270;
-    --tint-ink: #d6daf6;
-    --prio-n: #3f4573;
-
-    --env-1: #6fb2ef;
-    --env-2: #b79bf5;
-    --env-3: #6fd6c0;
-    --env-4: #efb173;
-    --env-5: #ff8c80;
-
-    color-scheme: dark;
-  }
+:root[data-theme='dark'] {
+  color-scheme: dark;
 }
 
 /*
@@ -484,7 +387,7 @@
     border: 1px solid var(--color-divider);
     border-top: 0;
     border-radius: 0 0 16px 16px;
-    box-shadow: 0 1px 2px rgb(22 28 74 / 0.06);
+    box-shadow: var(--shadow-card);
   }
 
   /* Un onglet du notch : souligné quand il porte la page ouverte. */
@@ -595,7 +498,7 @@
     background: var(--color-surface);
     color: var(--color-text);
     font-weight: 700;
-    box-shadow: 0 1px 2px rgb(22 28 74 / 0.12);
+    box-shadow: var(--shadow-card);
   }
 }
 
@@ -628,7 +531,7 @@
 
   .cta:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 24px rgb(28 27 75 / 0.12);
+    box-shadow: var(--shadow-lift);
   }
 
   .cta:hover .cta-round {
@@ -651,7 +554,7 @@
     border-radius: 14px;
     background: var(--color-surface);
     color: var(--cta-color, var(--color-accent));
-    box-shadow: 0 1px 2px rgb(28 27 75 / 0.06);
+    box-shadow: var(--shadow-card);
   }
 
   .cta-round {
@@ -685,7 +588,7 @@
     border: 1px solid var(--color-divider);
     border-left: 3px solid var(--rail, var(--color-accent));
     border-radius: 12px;
-    box-shadow: 0 1px 2px rgb(28 27 75 / 0.04);
+    box-shadow: var(--shadow-card);
   }
 
   /* Le glyphe de fond : assez pâle pour passer sous le titre. */
@@ -797,7 +700,7 @@
   }
 
   .input:hover {
-    border-color: var(--color-neutral-400);
+    border-color: var(--color-line-strong);
   }
 
   .input:focus-visible {
@@ -876,6 +779,6 @@
 
   .kpi:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 24px rgb(28 27 75 / 0.12) !important;
+    box-shadow: var(--shadow-lift) !important;
   }
 }

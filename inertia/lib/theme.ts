@@ -63,12 +63,16 @@ export function applyTheme(theme: Theme): void {
  * cadre autour de la page. Si elle ne suit pas le thème, la barre bleu nuit
  * se retrouve sertie dans la teinte de l'autre thème.
  *
- * Elle est LUE dans la feuille de style plutôt que recopiée ici : les deux
- * bleus nuit n'existent qu'à un endroit, le jeton --color-nav. Tant que la
- * feuille n'est pas là, la valeur du gabarit tient.
+ * On LIT la couleur peinte de la barre, et non le jeton --color-nav : une
+ * propriété personnalisée se calcule telle qu'elle est écrite, et rendrait
+ * ici la chaîne « light-dark(…, …) » au lieu d'une couleur. Le fond calculé
+ * de la barre, lui, est déjà résolu — et c'est bien la couleur qu'on voit.
  */
 export function syncThemeColor(): void {
-  const nav = getComputedStyle(document.documentElement).getPropertyValue('--color-nav').trim()
+  const bar = document.querySelector('.appbar')
+  if (!bar) return
+
+  const nav = getComputedStyle(bar).backgroundColor
   if (!nav) return
 
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', nav)

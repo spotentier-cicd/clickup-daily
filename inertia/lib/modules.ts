@@ -41,13 +41,20 @@ export function softOf(color: string): string {
   return `color-mix(in srgb, ${color} 14%, var(--color-surface))`
 }
 
+/*
+| Les couleurs sont des JETONS, pas des hexadécimaux.
+|
+| Écrites en dur ici, elles ne connaissaient qu'un seul thème : le bleu du
+| module « Tâches » était calibré pour du blanc, et sa vignette devenait
+| illisible sur fond sombre. La feuille de style en donne les deux versions.
+*/
 const SOLO: { key: string; label: string; icon: Icon; color: string }[] = [
   { key: 'today', label: "Aujourd'hui", icon: SunHorizon, color: 'var(--color-accent)' },
-  { key: 'kanban', label: 'Mon tableau', icon: Kanban, color: '#6941c6' },
-  { key: 'veille', label: 'Veille', icon: Newspaper, color: '#a84d0d' },
+  { key: 'kanban', label: 'Mon tableau', icon: Kanban, color: 'var(--mod-board)' },
+  { key: 'veille', label: 'Veille', icon: Newspaper, color: 'var(--mod-watch)' },
 ]
 
-const TASKS_COLOR = '#0b4f8a'
+const TASKS_COLOR = 'var(--mod-tasks)'
 
 /**
  * Les modules, dans l'ordre du notch.

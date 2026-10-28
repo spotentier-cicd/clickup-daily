@@ -27,7 +27,7 @@
 | l'installation du travailleur, et le navigateur ne réinstalle celui-ci que
 | si SES octets à lui ont bougé. Sans ça, l'ancienne page resterait servie.
 */
-const VERSION = 'v1'
+const VERSION = 'v2'
 const SHELL = `point-clickup-shell-${VERSION}`
 const ASSETS = `point-clickup-assets-${VERSION}`
 const OFFLINE = '/offline.html'
