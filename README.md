@@ -140,16 +140,64 @@ rapprocher des tickets, décommentez le montage `/repos` dans
 **La notification macOS** ne fonctionne pas en conteneur : `osascript` n'y
 existe pas. L'échec est avalé, la collecte n'en souffre pas.
 
-## La collecte du matin, sans conteneur
+## Au démarrage, sans conteneur
 
 ```bash
-./scripts/install-launchd.sh          # jours ouvrés à 8 h 00
-./scripts/install-launchd.sh 7 30     # à 7 h 30
+npm run build                         # le service sert les fichiers du build
+./scripts/install-launchd.sh          # tableau au démarrage + collecte à 8 h 00
+./scripts/install-launchd.sh 7 30     # collecte à 7 h 30
 ./scripts/install-launchd.sh --remove
 ```
 
-Le script installe un agent launchd qui lance `daily:report --trigger
-scheduled`. Le journal va dans `tmp/daily-report.log`.
+Le script installe **deux agents launchd** :
+
+| | |
+|---|---|
+| `com.clickup-daily-server.<vous>` | le tableau, lancé à l'ouverture de session et relancé s'il s'arrête. Journal : `tmp/server.log` |
+| `com.clickup-daily.<vous>` | `daily:report --trigger scheduled`, les jours ouvrés. Journal : `tmp/daily-report.log` |
+
+Ce sont des **agents**, pas des daemons : ils démarrent à l'ouverture de
+session, pas au boot de la machine. C'est voulu — le tableau est personnel, il
+lit un `.env` qui porte un jeton ClickUp, et il n'écoute que sur localhost.
+
+Le tableau est servi par `serve.js`, **depuis la racine du projet** et non
+depuis `build/`. La raison est dans l'en-tête du fichier : la base SQLite se
+résout par rapport à la racine de l'application, et un service lancé depuis
+`build/` ouvrirait une seconde base, vide — que `node ace build` effacerait au
+build suivant. Le serveur et la collecte partagent donc le même `.env` et la
+même base, comme quand on les lance à la main.
+
+### macOS : l'autorisation à donner une fois
+
+Si le projet est dans `~/Documents`, `~/Desktop` ou `~/Downloads`, macOS les
+protège : un agent lancé par launchd n'hérite **pas** de l'autorisation du
+Terminal et ne peut pas lire ses propres fichiers. Il échoue avec
+`Operation not permitted`, et il échoue **en silence** — c'est le genre de
+panne qu'on ne découvre que des semaines plus tard.
+
+Le script le détecte, décharge l'agent plutôt que de le laisser boucler, et
+affiche le chemin exact à autoriser dans *Réglages Système → Confidentialité
+et sécurité → Accès complet au disque*. C'est le binaire `node` qu'il faut y
+ajouter. Relancez ensuite le script.
+
+Attention : avec nvm, ce chemin porte le numéro de version. Une mise à jour de
+node demande donc de réautoriser le nouveau binaire — relancer le script
+affiche le bon chemin.
+
+Deux manières d'éviter l'autorisation : déplacer le projet hors des dossiers
+protégés, ou passer par les conteneurs (Docker Desktop réglé pour s'ouvrir à
+la session, `restart: unless-stopped` est déjà dans le compose). La base vit
+alors dans le volume Docker, pas dans `tmp/`.
+
+### Développer pendant que le service tourne
+
+Les deux se disputeraient le port 3333. Mettez l'agent en pause le temps de
+travailler :
+
+```bash
+launchctl bootout   gui/$(id -u)/com.clickup-daily-server.$(id -un)   # pause
+./scripts/install-launchd.sh                                          # reprise
+```
 
 Le déclencheur compte : `scheduled` est le seul qui déplace la **référence** de
 « ce qui a changé ». Un clic sur « Rafraîchir » dans la journée compare donc

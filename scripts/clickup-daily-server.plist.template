@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Le tableau de bord, toujours ouvert.
+
+  C'est un AGENT, pas un daemon : il démarre à l'ouverture de SESSION, pas au
+  démarrage de la machine. C'est ce qu'on veut — le tableau est personnel, il
+  lit un .env qui contient un jeton ClickUp, et il n'a rien à faire sur
+  l'écran de connexion. Un daemon demanderait en plus les droits
+  administrateur pour un serveur qui n'écoute que sur localhost.
+
+  KeepAlive le relance s'il s'arrête, pour quelque raison que ce soit : c'est
+  tout l'intérêt de ne plus avoir à y penser. Le revers est qu'un port 3333
+  déjà pris — un `npm run dev` ouvert — le fait boucler : voyez tmp/server.log
+  et mettez l'agent en pause le temps de développer.
+
+  Ce fichier est un gabarit : scripts/install-launchd.sh y remplace les
+  __MARQUEURS__ par les chemins de votre poste.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>__LABEL__</string>
+
+  <!-- serve.js, et pas build/bin/server.js : voir l'en-tête de serve.js. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NODE__</string>
+    <string>__PROJECT__/serve.js</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>__PROJECT__</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <!-- Sans ça, le serveur chercherait un serveur Vite qui n'existe pas. -->
+    <key>NODE_ENV</key>
+    <string>production</string>
+    <!--
+      launchd ne donne presque rien comme PATH. Le bouton « Rafraîchir »
+      relance une collecte, qui peut avoir besoin de git pour rapprocher les
+      branches des tickets.
+    -->
+    <key>PATH</key>
+    <string>__PATH__</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+
+  <key>StandardOutPath</key>
+  <string>__PROJECT__/tmp/server.log</string>
+  <key>StandardErrorPath</key>
+  <string>__PROJECT__/tmp/server.log</string>
+</dict>
+</plist>
