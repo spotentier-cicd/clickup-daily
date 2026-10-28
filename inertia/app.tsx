@@ -27,6 +27,27 @@ createInertiaApp({
     )
   },
   progress: {
-    color: '#4B5563',
+    color: '#4a54b8',
   },
 })
+
+/*
+| L'APPLICATION INSTALLÉE.
+|
+| Le travailleur de service est ce qui fait passer la page du statut de
+| « site » à celui d'« application » : une fenêtre à elle, une icône dans le
+| dock, et une page honnête quand le serveur ne répond plus. Ce qu'il met en
+| cache, et surtout ce qu'il refuse d'y mettre, est expliqué dans public/sw.js.
+|
+| Il ne s'enregistre qu'en PRODUCTION. En développement, Vite sert les modules
+| depuis sa propre mémoire : un intermédiaire qui met des fichiers en cache
+| n'aurait là que des inconvénients. C'est sans conséquence pour l'usage réel,
+| le conteneur tournant en NODE_ENV=production.
+*/
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  globalThis.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      /* Origine non sécurisée, stockage refusé : le tableau marche sans. */
+    })
+  })
+}

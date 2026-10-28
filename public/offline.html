@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hors ligne — Point ClickUp</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="color-scheme" content="light dark" />
+
+    <!--
+      La page servie par le travailleur de service quand le serveur ne répond
+      plus. Elle ne montre AUCUNE donnée : tout ce que le tableau sait vient
+      du serveur, et un chiffre d'hier affiché sans le dire vaut moins que
+      rien. Elle dit donc seulement ce qui se passe, et propose de réessayer.
+
+      Elle est autonome — styles en ligne, marque en ligne, police du système.
+      La feuille de style de l'application porte une empreinte dans son nom,
+      qu'on ne peut pas écrire ici en dur ; et une page affichée faute de
+      réseau ne peut dépendre d'AUCUN fichier qu'il faudrait aller chercher,
+      pas même le favicon.
+    -->
+    <script>
+      try {
+        var theme = localStorage.getItem('cud-theme')
+        if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme
+      } catch (error) {
+        /* Navigation privée, stockage bloqué : le thème automatique fera l'affaire. */
+      }
+    </script>
+
+    <style>
+      :root {
+        --bg: #f3f4f8;
+        --surface: #ffffff;
+        --title: #16135e;
+        --text: #1c2040;
+        --muted: #5d6180;
+        --line: #e3e5ee;
+        --accent: #4a54b8;
+        color-scheme: light;
+      }
+
+      :root[data-theme='dark'] {
+        --bg: #151936;
+        --surface: #1e2450;
+        --title: #ffffff;
+        --text: #e7e9f6;
+        --muted: #a9afd4;
+        --line: #333a68;
+        --accent: #aeb5ee;
+        color-scheme: dark;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme]) {
+          --bg: #151936;
+          --surface: #1e2450;
+          --title: #ffffff;
+          --text: #e7e9f6;
+          --muted: #a9afd4;
+          --line: #333a68;
+          --accent: #aeb5ee;
+          color-scheme: dark;
+        }
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        box-sizing: border-box;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          500 14px/1.6 system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      main {
+        width: 100%;
+        max-width: 440px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        padding: 28px;
+        box-sizing: border-box;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--accent);
+        border-radius: 12px;
+        box-shadow: 0 1px 2px rgb(28 27 75 / 0.04);
+      }
+
+      .kicker {
+        font-size: 10.5px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      h1 {
+        margin: 6px 0 0;
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1.2;
+        color: var(--title);
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      button {
+        align-self: flex-start;
+        font: inherit;
+        font-weight: 700;
+        color: var(--surface);
+        background: var(--accent);
+        border: 0;
+        border-radius: 10px;
+        padding: 10px 16px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        filter: brightness(0.92);
+      }
+    </style>
+  </head>
+
+  <body>
+    <main>
+      <svg width="44" height="44" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="#4a54b8" />
+        <rect x="7" y="14" width="4" height="11" rx="2" fill="#f5f5fd" opacity=".62" />
+        <rect x="14" y="7" width="4" height="18" rx="2" fill="#f5f5fd" />
+        <rect x="21" y="18" width="4" height="7" rx="2" fill="#f5f5fd" opacity=".62" />
+      </svg>
+      <div>
+        <p class="kicker">Point ClickUp</p>
+        <h1>Le serveur ne répond pas</h1>
+      </div>
+      <p>
+        L’application est bien installée, mais tout ce qu’elle affiche vient du serveur : sans lui,
+        elle n’a rien à montrer plutôt que quelque chose de périmé. Vérifiez qu’il tourne, puis
+        réessayez.
+      </p>
+      <button type="button" onclick="location.reload()">Réessayer</button>
+    </main>
+  </body>
+</html>

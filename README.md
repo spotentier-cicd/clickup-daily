@@ -32,8 +32,8 @@ Le tableau de bord attend sur http://localhost:3333.
 ## Premier réglage
 
 Au premier lancement rien n'est collecté : le projet ne devine pas ce qui vous
-intéresse dans votre ClickUp. Ouvrez **/parametres** (l'engrenage en haut à
-gauche).
+intéresse dans votre ClickUp. Ouvrez **/parametres** (menu du compte, en haut à
+droite de la barre).
 
 La page lit votre arborescence réelle — équipes, espaces, dossiers, listes — et
 vous cochez ce que vous voulez suivre :
@@ -58,6 +58,33 @@ ou cliquez **Rafraîchir** dans le tableau de bord.
 Rien n'est écrit en dur nulle part : le jeton donne l'utilisateur, ses équipes
 et son arborescence. Deux personnes clonent le même dépôt et obtiennent chacune
 son tableau.
+
+## Installer l'application
+
+Le tableau s'installe comme une application : une fenêtre à elle, sans barre
+d'adresse, et une icône dans le dock ou sur l'écran d'accueil. Dans Chrome ou
+Edge, l'icône d'installation apparaît au bout de la barre d'adresse ; dans
+Safari, *Fichier → Ajouter au Dock*.
+
+L'installation demande un **service worker**, et celui-ci ne s'enregistre
+qu'en production — `npm run dev` n'en pose pas, pour ne pas s'intercaler entre
+Vite et le navigateur. Installez donc depuis le conteneur (`docker compose up
+-d`), ou depuis un build servi localement.
+
+Ce qui est installé reste **une fenêtre sur le serveur** : rien n'est mis en
+cache de ce que le tableau affiche. C'est la même règle que le bandeau « ce
+rapport date du… » — des tickets d'avant-hier affichés sans le dire valent
+moins que rien. Serveur éteint, l'application s'ouvre donc sur une page qui le
+dit, avec un bouton pour réessayer. Seuls les fichiers de build sont gardés,
+et uniquement parce que leur nom porte l'empreinte de leur contenu : une
+version en cache ne peut pas être la mauvaise.
+
+| Fichier | Rôle |
+|---|---|
+| `public/manifest.webmanifest` | Nom, icônes, couleurs, raccourci vers le paramétrage. |
+| `public/sw.js` | Ce qui est mis en cache, et surtout ce qui ne l'est pas. **Incrémentez `VERSION`** en touchant à `offline.html`. |
+| `public/offline.html` | La page servie quand le serveur ne répond pas. Autonome : aucun fichier à aller chercher. |
+| `scripts/make-icons.mjs` | Regénère les quatre PNG à partir des formes de `favicon.svg`. Sans dépendance. |
 
 ## Les commandes
 
@@ -267,6 +294,11 @@ données, sans rien envoyer nulle part :
   transcriptions Claude Code.
 - `app/controllers` — le tableau, le paramétrage, le rafraîchissement, et les
   écritures du tableau personnel.
-- `inertia/` — React 19, Inertia, Tailwind v4.
+- `inertia/` — React 19, Inertia, Tailwind v4. La barre bleu nuit et le notch
+  qui porte le sélecteur de module sont dans `components/topbar.tsx` et
+  `components/notch_nav.tsx` ; `lib/modules.ts` dit comment les onglets s'y
+  rangent.
+- `public/` — le favicon, et de quoi installer l'application (manifeste,
+  icônes, service worker, page hors ligne).
 
 Chaque collecte est archivée : on peut rouvrir le rapport d'un jour passé.

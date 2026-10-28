@@ -6,9 +6,40 @@
     <title data-inertia>Point ClickUp</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
+    {{-- Installable : une fenêtre à elle, une icône dans le dock. Le manifeste
+         et les icônes sont des fichiers statiques de public/ ; le travailleur
+         de service, lui, ne s'enregistre qu'en production (inertia/app.tsx). --}}
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="application-name" content="Point ClickUp" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Point ClickUp" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    {{-- En fenêtre autonome, c'est cette couleur qui peint le cadre autour de
+         la page : elle doit donc être celle de la barre. La valeur posée ici
+         est celle du thème clair ; syncThemeColor() la remet en accord avec
+         --color-nav dès que la feuille de style est là. --}}
+    <meta name="theme-color" content="#161c4a" />
+
     {{-- Le navigateur peint son cadre avant la feuille de style : sans ça, un
          thème sombre s'ouvre sur un éclair blanc. --}}
-    <meta name="color-scheme" content="dark light" />
+    <meta name="color-scheme" content="light dark" />
+
+    {{-- Le thème choisi est posé AVANT la première peinture, et sur toutes les
+         pages : le poser depuis React le ferait arriver après le premier
+         rendu — un éclair clair au chargement — et seules les pages qui
+         pensent à l'appliquer l'auraient. « auto » ne pose rien : c'est
+         l'absence d'attribut qui rend la main à prefers-color-scheme. --}}
+    <script>
+      try {
+        var theme = localStorage.getItem('cud-theme')
+        if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme
+      } catch (error) {
+        /* Navigation privée, stockage bloqué : le thème automatique fera l'affaire. */
+      }
+    </script>
 
     @viteReactRefresh()
     @vite(['inertia/app.tsx'])

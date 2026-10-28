@@ -1,56 +1,77 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/inter';
+@import '@fontsource-variable/quicksand';
 @import '@fontsource-variable/jetbrains-mono';
 
 /*
-| ——— NOCTURNE ——————————————————————————————————————————————————————————————
+| ——— NOTCH ————————————————————————————————————————————————————————————————
 |
-| Les jetons du système de design, repris tels quels de nocturne.css. Le thème
-| SOMBRE est la définition de base : c'est l'état par défaut de la page, et
-| c'est dans cet ordre que le système a été calibré. Le clair est une reprise
-| complète, jamais un ajustement d'opacité.
+| Le système de design repris de la maquette « sans rail, sélecteur de module
+| dans le notch du haut ».
 |
-| Trois états de thème, et une seule règle pour les trois :
+| Trois surfaces, et c'est tout le vocabulaire :
+|   — la BARRE, bleu nuit, pleine largeur, qui ne porte que ce qui vaut pour
+|     l'application entière (périmètre, recherche, moi) ;
+|   — le NOTCH, blanc, centré, accroché sous la barre, qui dit où on est et
+|     où on peut aller ;
+|   — le PLAN, gris très clair, sur lequel flottent des cartes blanches.
+|
+| Le CLAIR est la définition de base : c'est l'état dans lequel la maquette a
+| été calibrée. Le sombre est une reprise complète, jamais un assombrissement.
+|
+| Trois états de thème, une seule règle pour les trois :
 |   — choix explicite  → [data-theme=light|dark] sur <html>, qui gagne toujours ;
 |   — réglage système  → aucun attribut, et prefers-color-scheme décide.
-| Aucune couleur n'a donc sa seule définition dans un bloc @media : sans ça,
-| un navigateur en mode clair verrait des variables non résolues.
+| Aucune couleur n'a donc sa seule définition dans un bloc @media.
 */
 :root {
-  --color-bg: #161826;
-  --color-surface: #232532;
-  --color-text: #e9e9ed;
-  --color-accent: #9184d9;
-  --color-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
+  /* Les trois surfaces. */
+  --color-bg: #f3f4f8;
+  --color-surface: #ffffff;
+  --color-nav: #161c4a;
+  --color-nav-raised: #232a63;
+  --color-nav-line: #3a4285;
+  --color-nav-dim: #c9cde6;
+  /* La gélule de recherche : elle doit se détacher de la barre, pas s'y fondre. */
+  --color-pill: #ffffff;
 
-  --color-neutral-100: #f3f5fe;
-  --color-neutral-200: #e4e7f5;
-  --color-neutral-300: #cfd3e5;
-  --color-neutral-400: #b2b6ca;
-  --color-neutral-500: #9397ab;
-  --color-neutral-600: #75798c;
-  --color-neutral-700: #595d6c;
-  --color-neutral-800: #3f424d;
-  --color-neutral-900: #292b31;
+  /* L'encre. Le titre est plus foncé et plus violet que le texte courant. */
+  --color-text: #1c2040;
+  --color-title: #16135e;
+  --color-accent: #4a54b8;
+  --color-accent-soft: #eceefb;
+  --color-divider: #e3e5ee;
 
-  --color-accent-100: #f5f4ff;
-  --color-accent-200: #e7e5fe;
-  --color-accent-300: #d2cefd;
-  --color-accent-400: #b5abfc;
-  --color-accent-500: #968ae0;
-  --color-accent-600: #796cbf;
-  --color-accent-700: #5d5294;
-  --color-accent-800: #423a6a;
-  --color-accent-900: #2b2741;
+  --color-neutral-100: #f8f9fc;
+  --color-neutral-200: #f3f4f8;
+  --color-neutral-300: #e9eaf2;
+  --color-neutral-400: #d3d5e0;
+  --color-neutral-500: #8a8fa8;
+  --color-neutral-600: #5d6180;
+  --color-neutral-700: #454a6b;
+  --color-neutral-800: #2b2f55;
+  --color-neutral-900: #16135e;
 
-  --shadow-sm: 0 0 0 1px #3f424d;
-  --shadow-md:
-    0 0 0 1px #595d6c, 0 6px 18px rgb(0 0 0 / 0.55);
-  --shadow-lg:
-    0 0 0 1px #9397ab, 0 16px 40px rgb(0 0 0 / 0.65);
+  --color-accent-100: #f5f5fd;
+  --color-accent-200: #eceefb;
+  --color-accent-300: #d6daf6;
+  --color-accent-400: #aeb5ee;
+  --color-accent-500: #7e88d8;
+  --color-accent-600: #4a54b8;
+  --color-accent-700: #3b438f;
+  --color-accent-800: #2c3270;
+  --color-accent-900: #1d2150;
 
-  --font-heading: 'Inter Variable', 'Inter', system-ui, sans-serif;
-  --font-body: 'Inter Variable', 'Inter', system-ui, sans-serif;
+  /*
+  | Trois profondeurs : posé, détaché, flottant. Le filet d'un pixel fait
+  | partie de l'ombre — une carte blanche sur un plan gris très clair n'existe
+  | pas sans lui.
+  */
+  --shadow-sm: 0 0 0 1px #e9eaf2, 0 1px 2px rgb(28 27 75 / 0.04);
+  --shadow-md: 0 0 0 1px #e3e5ee, 0 10px 24px rgb(28 27 75 / 0.1);
+  --shadow-lg: 0 16px 40px rgb(22 28 74 / 0.2), 0 2px 6px rgb(22 28 74 / 0.08);
+
+  --font-heading: 'Quicksand Variable', 'Quicksand', system-ui, sans-serif;
+  --font-body: 'Quicksand Variable', 'Quicksand', system-ui, sans-serif;
   --mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
 
   /*
@@ -59,106 +80,183 @@
   | une catégorie : il se signale par un glyphe. Les quatre gris sont
   | structurels et se lisent tous sur --color-bg comme sur --color-surface.
   */
-  --red: oklch(0.72 0.14 22);
-  --amber: oklch(0.8 0.12 78);
-  --green: oklch(0.76 0.11 160);
-  --muted: color-mix(in srgb, var(--color-text) 62%, transparent);
-  --faint: color-mix(in srgb, var(--color-text) 42%, transparent);
-  --soft: color-mix(in srgb, var(--color-text) 5%, transparent);
+  --red: #d14343;
+  --amber: #c2690f;
+  --green: #0e7468;
+  --muted: #5d6180;
+  --faint: #8a8fa8;
+  --soft: #f3f4f8;
 
   /* La teinte qui dit « c'est à moi », assez pâle pour passer sous du texte. */
-  --mine: color-mix(in srgb, var(--color-accent) 9%, var(--color-surface));
-  --ref: var(--color-accent-300);
-  --tint: var(--color-accent-900);
-  --tint-ink: var(--color-accent-200);
-  --prio-n: var(--color-neutral-800);
+  --mine: #f3f3fc;
+  --ref: #4f3fb8;
+  --tint: #eceefb;
+  --tint-ink: #3b438f;
+  --prio-n: #d3d5e0;
 
   /*
   | Les espaces ClickUp n'ont pas de couleur en configuration : cinq teintes
   | fixes leur sont distribuées dans l'ordre, ce qui donne la même couleur au
-  | même espace d'un jour à l'autre sans rien avoir à déclarer.
+  | même espace d'un jour à l'autre sans rien avoir à déclarer. Ce sont les
+  | mêmes cinq teintes que les modules de la maquette.
   */
-  --env-1: oklch(0.76 0.09 245);
-  --env-2: oklch(0.76 0.09 305);
-  --env-3: oklch(0.78 0.09 185);
-  --env-4: oklch(0.78 0.1 95);
-  --env-5: oklch(0.75 0.1 25);
-
-  color-scheme: dark;
-}
-
-:root[data-theme='light'] {
-  --color-bg: #eceef6;
-  --color-surface: #f7f8fc;
-  --color-text: #25272e;
-  --color-accent: #6a5db3;
-  --color-divider: rgb(37 39 46 / 0.14);
-  --shadow-sm: 0 0 0 1px #d8dbe7;
-  --shadow-md:
-    0 0 0 1px #c6cadb, 0 6px 18px rgb(37 39 46 / 0.1);
-  --shadow-lg:
-    0 0 0 1px #b2b6ca, 0 16px 40px rgb(37 39 46 / 0.16);
-  --red: oklch(0.55 0.17 25);
-  --amber: oklch(0.58 0.13 65);
-  --green: oklch(0.52 0.12 160);
-  --ref: #5d5294;
-  --tint: #e7e5fe;
-  --tint-ink: #423a6a;
-  --prio-n: #cfd3e5;
-  --env-1: oklch(0.52 0.11 245);
-  --env-2: oklch(0.52 0.12 305);
-  --env-3: oklch(0.52 0.09 185);
-  --env-4: oklch(0.54 0.1 95);
-  --env-5: oklch(0.52 0.14 25);
+  --env-1: #0b4f8a;
+  --env-2: #6941c6;
+  --env-3: #0e7468;
+  --env-4: #a84d0d;
+  --env-5: #b42318;
 
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme]) {
-    --color-bg: #eceef6;
-    --color-surface: #f7f8fc;
-    --color-text: #25272e;
-    --color-accent: #6a5db3;
-    --color-divider: rgb(37 39 46 / 0.14);
-    --shadow-sm: 0 0 0 1px #d8dbe7;
-    --shadow-md:
-      0 0 0 1px #c6cadb, 0 6px 18px rgb(37 39 46 / 0.1);
-    --shadow-lg:
-      0 0 0 1px #b2b6ca, 0 16px 40px rgb(37 39 46 / 0.16);
-    --red: oklch(0.55 0.17 25);
-    --amber: oklch(0.58 0.13 65);
-    --green: oklch(0.52 0.12 160);
-    --ref: #5d5294;
-    --tint: #e7e5fe;
-    --tint-ink: #423a6a;
-    --prio-n: #cfd3e5;
-    --env-1: oklch(0.52 0.11 245);
-    --env-2: oklch(0.52 0.12 305);
-    --env-3: oklch(0.52 0.09 185);
-    --env-4: oklch(0.54 0.1 95);
-    --env-5: oklch(0.52 0.14 25);
+/*
+| Le sombre. La barre reste la surface la plus foncée de la page : c'est ce
+| qui garde le notch lisible comme une découpe, et pas comme un bloc posé.
+*/
+:root[data-theme='dark'] {
+  --color-bg: #151936;
+  --color-surface: #1e2450;
+  --color-nav: #0c1030;
+  --color-nav-raised: #232a63;
+  --color-nav-line: #3a4285;
+  --color-nav-dim: #a9afd4;
+  --color-pill: #2b3372;
 
-    color-scheme: light;
+  --color-text: #e7e9f6;
+  --color-title: #ffffff;
+  --color-accent: #aeb5ee;
+  --color-accent-soft: #2c3270;
+  --color-divider: #333a68;
+
+  --color-neutral-100: #f8f9fc;
+  --color-neutral-200: #d6daf6;
+  --color-neutral-300: #aeb5ee;
+  --color-neutral-400: #8d93c2;
+  --color-neutral-500: #6f74a0;
+  --color-neutral-600: #585e8c;
+  --color-neutral-700: #3f4573;
+  --color-neutral-800: #2c3270;
+  --color-neutral-900: #1d2150;
+
+  --color-accent-100: #f5f5fd;
+  --color-accent-200: #d6daf6;
+  --color-accent-300: #aeb5ee;
+  --color-accent-400: #8d93c2;
+  --color-accent-500: #6f74a0;
+  --color-accent-600: #585e8c;
+  --color-accent-700: #3f4573;
+  --color-accent-800: #2c3270;
+  --color-accent-900: #1d2150;
+
+  --shadow-sm: 0 0 0 1px #333a68;
+  --shadow-md: 0 0 0 1px #3f4573, 0 10px 24px rgb(0 0 0 / 0.45);
+  --shadow-lg: 0 16px 40px rgb(0 0 0 / 0.6), 0 0 0 1px #3f4573;
+
+  --red: #ff8c80;
+  --amber: #f0b45c;
+  --green: #6fd6c0;
+  --muted: #a9afd4;
+  --faint: #767ca6;
+  --soft: #272e5e;
+
+  --mine: #262c62;
+  --ref: #aeb5ee;
+  --tint: #2c3270;
+  --tint-ink: #d6daf6;
+  --prio-n: #3f4573;
+
+  --env-1: #6fb2ef;
+  --env-2: #b79bf5;
+  --env-3: #6fd6c0;
+  --env-4: #efb173;
+  --env-5: #ff8c80;
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-bg: #151936;
+    --color-surface: #1e2450;
+    --color-nav: #0c1030;
+    --color-nav-raised: #232a63;
+    --color-nav-line: #3a4285;
+    --color-nav-dim: #a9afd4;
+    --color-pill: #2b3372;
+
+    --color-text: #e7e9f6;
+    --color-title: #ffffff;
+    --color-accent: #aeb5ee;
+    --color-accent-soft: #2c3270;
+    --color-divider: #333a68;
+
+    --color-neutral-100: #f8f9fc;
+    --color-neutral-200: #d6daf6;
+    --color-neutral-300: #aeb5ee;
+    --color-neutral-400: #8d93c2;
+    --color-neutral-500: #6f74a0;
+    --color-neutral-600: #585e8c;
+    --color-neutral-700: #3f4573;
+    --color-neutral-800: #2c3270;
+    --color-neutral-900: #1d2150;
+
+    --color-accent-100: #f5f5fd;
+    --color-accent-200: #d6daf6;
+    --color-accent-300: #aeb5ee;
+    --color-accent-400: #8d93c2;
+    --color-accent-500: #6f74a0;
+    --color-accent-600: #585e8c;
+    --color-accent-700: #3f4573;
+    --color-accent-800: #2c3270;
+    --color-accent-900: #1d2150;
+
+    --shadow-sm: 0 0 0 1px #333a68;
+    --shadow-md: 0 0 0 1px #3f4573, 0 10px 24px rgb(0 0 0 / 0.45);
+    --shadow-lg: 0 16px 40px rgb(0 0 0 / 0.6), 0 0 0 1px #3f4573;
+
+    --red: #ff8c80;
+    --amber: #f0b45c;
+    --green: #6fd6c0;
+    --muted: #a9afd4;
+    --faint: #767ca6;
+    --soft: #272e5e;
+
+    --mine: #262c62;
+    --ref: #aeb5ee;
+    --tint: #2c3270;
+    --tint-ink: #d6daf6;
+    --prio-n: #3f4573;
+
+    --env-1: #6fb2ef;
+    --env-2: #b79bf5;
+    --env-3: #6fd6c0;
+    --env-4: #efb173;
+    --env-5: #ff8c80;
+
+    color-scheme: dark;
   }
 }
 
 /*
-| Les jetons gardent les noms de nocturne.css, sans passer par @theme : les
-| enregistrer comme couleurs Tailwind produirait --color-surface: var(--color-surface),
+| Les jetons gardent leurs noms, sans passer par @theme : les enregistrer
+| comme couleurs Tailwind produirait --color-surface: var(--color-surface),
 | une définition circulaire. Le balisage les lit donc en valeur arbitraire —
 | text-[var(--muted)], bg-[var(--color-surface)] — ce qui garde une seule
-| orthographe entre la feuille de style, le balisage et le système d'origine.
+| orthographe entre la feuille de style, le balisage et la maquette.
 */
 @theme inline {
   --font-sans: var(--font-body);
   --font-mono: var(--mono);
 }
 
+/*
+| Les rayons de la maquette : 8 pour un jeton, 12 pour une carte, 16 pour un
+| panneau. Rien n'est jamais carré, rien n'est jamais rond.
+*/
 @theme {
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 14px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
 }
 
 @layer base {
@@ -170,6 +268,8 @@
     margin: 0;
     background: var(--color-bg);
     color: var(--color-text);
+    /* Quicksand est une linéale ronde : 500 est son « normal » de lecture. */
+    font-weight: 500;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -196,15 +296,430 @@
   }
 
   ::selection {
-    background: color-mix(in srgb, var(--color-accent) 30%, transparent);
+    background: color-mix(in srgb, var(--color-accent) 24%, transparent);
   }
 }
 
 /*
-| ——— Composants Nocturne ————————————————————————————————————————————————————
+| ——— Le châssis ————————————————————————————————————————————————————————————
 |
-| Le strict nécessaire, en CSS simple : le tableau de bord n'a besoin que d'un
-| bouton, d'un champ, d'une étiquette et d'un filet.
+| La barre, le notch, et les menus qui en tombent. Trois composants qui ne
+| servent qu'à la navigation, et qui n'ont donc aucune raison d'être écrits
+| en ligne dans six endroits.
+*/
+@layer components {
+  /*
+  | La barre bleu nuit, pleine largeur. Elle n'est pas collée elle-même : la
+  | page la colle AVEC le notch, pour que la navigation reste atteignable en
+  | bas de page — un notch qui défile oblige à remonter pour changer de vue.
+  */
+  .appbar {
+    position: relative;
+    z-index: 40;
+    background: var(--color-nav);
+    color: #ffffff;
+  }
+
+  /* La bande opaque qui porte le notch sous la barre collée. */
+  .appbar-stack {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+
+  .appbar-stack > .notch-band {
+    background: var(--color-bg);
+  }
+
+  /*
+  | La barre va d'un bord à l'autre : pas de colonne centrée, pas de retrait
+  | latéral. Le périmètre est donc collé à gauche de la fenêtre et le compte
+  | collé à droite, et c'est ce qui donne le plus de place aux deux flancs —
+  | donc la marge la plus large à la recherche pour rester centrée.
+  */
+  .appbar-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+    min-height: 64px;
+    padding: 9px 0;
+    box-sizing: border-box;
+  }
+
+  /*
+  | Le bouton en relief de la barre : le périmètre, et lui seul.
+  |
+  | Il est collé au bord gauche de la fenêtre : ses coins de ce côté sont donc
+  | vifs et sa bordure gauche retirée. Un bouton arrondi posé à zéro aurait
+  | l'air tranché par le bord, pas ancré à lui.
+  */
+  .nav-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 46px;
+    padding: 0 12px 0 8px;
+    border: 1px solid var(--color-nav-line);
+    border-left: 0;
+    border-radius: 0 10px 10px 0;
+    background: var(--color-nav-raised);
+    color: #ffffff;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.12s ease;
+  }
+
+  .nav-chip:hover {
+    background: color-mix(in srgb, #ffffff 10%, var(--color-nav-raised));
+  }
+
+  /* Un bouton discret de la barre : il ne se détache qu'au survol. */
+  .nav-ghost {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #ffffff;
+    cursor: pointer;
+    font: 600 13px var(--font-body);
+    white-space: nowrap;
+    transition: background-color 0.12s ease;
+  }
+
+  .nav-ghost:hover:not(:disabled) {
+    background: rgb(255 255 255 / 0.1);
+  }
+
+  .nav-ghost:disabled {
+    opacity: 0.55;
+    cursor: progress;
+  }
+
+  .nav-ghost[aria-pressed='true'] {
+    background: rgb(255 255 255 / 0.16);
+  }
+
+  /* La pastille de comptage sur un bouton de la barre. */
+  .nav-count {
+    font: 700 11px var(--mono);
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.16);
+    color: #ffffff;
+  }
+
+  /*
+  | La gélule de recherche : blanche, et au centre de la PAGE — c'est la barre
+  | qui s'en charge, en donnant la même base à ses deux flancs.
+  |
+  | 540 px et pas 560 : les vingt pixels rendus aux flancs sont la marge qui
+  | laisse le compteur de « mes tâches » passer à trois chiffres sans que la
+  | gélule se décentre.
+  */
+  .searchpill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 44px;
+    flex: 1 1 320px;
+    max-width: 540px;
+    padding: 0 8px 0 16px;
+    border-radius: 22px;
+    background: var(--color-pill);
+    color: var(--color-text);
+    box-sizing: border-box;
+  }
+
+  .searchpill input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: none;
+    background: none;
+    font: 600 14px var(--font-body);
+    color: var(--color-text);
+  }
+
+  .searchpill input::placeholder {
+    color: var(--faint);
+    font-weight: 500;
+  }
+
+  .searchpill kbd {
+    font: 700 11px var(--mono);
+    color: var(--muted);
+    padding: 3px 8px;
+    background: color-mix(in srgb, var(--color-text) 8%, transparent);
+    border-radius: 12px;
+  }
+
+  /*
+  | LE NOTCH.
+  |
+  | Une découpe blanche accrochée sous la barre : pas de bord haut, des coins
+  | bas arrondis, une largeur qui suit son contenu. C'est lui qui dit à quel
+  | module on est, et quelles pages ce module a.
+  */
+  .notch {
+    position: relative;
+    z-index: 30;
+    align-self: center;
+    width: fit-content;
+    max-width: calc(100% - 32px);
+    margin: 0 auto;
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 4px;
+    min-height: 56px;
+    padding: 0 20px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-divider);
+    border-top: 0;
+    border-radius: 0 0 16px 16px;
+    box-shadow: 0 1px 2px rgb(22 28 74 / 0.06);
+  }
+
+  /* Un onglet du notch : souligné quand il porte la page ouverte. */
+  .notch-tab {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 12px;
+    border: 0;
+    border-top: 3px solid transparent;
+    border-bottom: 3px solid transparent;
+    background: none;
+    cursor: pointer;
+    white-space: nowrap;
+    font: 600 14px var(--font-body);
+    color: var(--muted);
+    transition:
+      background-color 0.12s ease,
+      color 0.12s ease;
+  }
+
+  .notch-tab[aria-current='false']:hover {
+    background: var(--soft);
+    color: var(--color-text);
+  }
+
+  .notch-tab[aria-current='page'] {
+    font-weight: 700;
+  }
+
+  /* Le sélecteur de module, à gauche du notch, séparé par un filet. */
+  .mod-switch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px 6px 6px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    cursor: pointer;
+    transition: background-color 0.12s ease;
+  }
+
+  .mod-switch:hover,
+  .mod-switch[aria-expanded='true'] {
+    background: var(--soft);
+  }
+
+  /* Le menu blanc qui tombe du notch ou de la barre. */
+  .menu {
+    background: var(--color-surface);
+    border-radius: 14px;
+    box-shadow: var(--shadow-lg);
+    padding: 8px;
+    box-sizing: border-box;
+    color: var(--color-text);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+    font: 600 14px var(--font-body);
+    transition: background-color 0.12s ease;
+  }
+
+  .menu-item:hover {
+    background: var(--soft);
+  }
+
+  .menu-sep {
+    height: 1px;
+    margin: 4px;
+    background: var(--color-divider);
+  }
+
+  /* Le sélecteur à deux ou trois positions, repris du menu du compte. */
+  .segmented {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 8px;
+    background: var(--soft);
+  }
+
+  .segmented button {
+    height: 28px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font: 600 12.5px var(--font-body);
+  }
+
+  .segmented button[aria-pressed='true'] {
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgb(22 28 74 / 0.12);
+  }
+}
+
+/*
+| ——— Les cartes ————————————————————————————————————————————————————————————
+|
+| Trois familles, pas une de plus : l'appel à l'action (.cta), la carte à
+| liseré (.card-rail), et la ligne de liste (.row) qui vit à l'intérieur.
+*/
+@layer components {
+  /* L'appel à l'action : fond pastel, vignette blanche, flèche ronde. */
+  .cta {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+    padding: 16px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--cta-soft, var(--color-accent-soft));
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    text-decoration: none;
+    transition:
+      transform 0.15s,
+      box-shadow 0.15s;
+  }
+
+  .cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgb(28 27 75 / 0.12);
+  }
+
+  .cta:hover .cta-round {
+    transform: translateX(3px);
+  }
+
+  .cta-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .cta-vis {
+    width: 48px;
+    height: 48px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    background: var(--color-surface);
+    color: var(--cta-color, var(--color-accent));
+    box-shadow: 0 1px 2px rgb(28 27 75 / 0.06);
+  }
+
+  .cta-round {
+    margin-left: auto;
+    align-self: center;
+    width: 30px;
+    height: 30px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--cta-color, var(--color-accent));
+    color: var(--color-surface);
+    transition: transform 0.15s;
+  }
+
+  /*
+  | La carte à liseré : blanche, un trait de 3 px à gauche qui porte la
+  | couleur de ce dont elle parle, et un grand glyphe pâle en haut à droite
+  | qui la rend reconnaissable de loin.
+  */
+  .card-rail {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    padding: 16px 20px 18px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-divider);
+    border-left: 3px solid var(--rail, var(--color-accent));
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgb(28 27 75 / 0.04);
+  }
+
+  /* Le glyphe de fond : assez pâle pour passer sous le titre. */
+  .card-mark {
+    position: absolute;
+    top: 16px;
+    right: 18px;
+    display: flex;
+    color: var(--rail, var(--color-accent));
+    opacity: 0.22;
+    pointer-events: none;
+  }
+
+  /* L'intitulé : petites capitales espacées, jamais du gras noir. */
+  .kicker {
+    font: 600 10.5px var(--font-body);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* La pastille de comptage d'une carte, dans la couleur du liseré. */
+  .pip {
+    flex: none;
+    font: 700 10px var(--mono);
+    color: var(--color-surface);
+    background: var(--rail, var(--color-accent));
+    border-radius: 999px;
+    padding: 1px 7px;
+  }
+}
+
+/*
+| ——— Les contrôles —————————————————————————————————————————————————————————
 */
 @layer components {
   .btn {
@@ -215,14 +730,17 @@
     cursor: pointer;
     white-space: nowrap;
     font-family: var(--font-heading);
-    font-weight: 500;
+    font-weight: 600;
     font-size: 13.5px;
     line-height: 1.2;
     color: var(--color-text);
-    background: transparent;
+    background: var(--color-surface);
     border: 1px solid transparent;
-    padding: 6px 10px;
-    border-radius: var(--radius-md);
+    padding: 7px 12px;
+    border-radius: 10px;
+    transition:
+      background-color 0.12s ease,
+      border-color 0.12s ease;
   }
 
   .btn:disabled {
@@ -231,12 +749,14 @@
   }
 
   .btn-primary {
-    color: var(--color-accent);
+    background: var(--color-accent);
     border-color: var(--color-accent);
+    color: var(--color-surface);
+    font-weight: 700;
   }
 
   .btn-primary:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+    background: color-mix(in srgb, var(--color-accent) 85%, #000);
   }
 
   .btn-secondary {
@@ -244,43 +764,40 @@
   }
 
   .btn-secondary:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--color-text) 7%, transparent);
+    background: var(--soft);
   }
 
   .btn-ghost {
+    background: transparent;
     color: var(--color-accent);
-    padding-inline: 4px;
+    padding-inline: 6px;
   }
 
   .btn-ghost:hover {
     background: color-mix(in srgb, var(--color-accent) 10%, transparent);
   }
 
-  .btn-icon {
-    width: 36px;
-    height: 36px;
-    padding: 0;
-  }
-
   .input {
     width: 100%;
-    min-height: 36px;
-    padding: 6px 10px;
+    min-height: 38px;
+    padding: 7px 12px;
     font: inherit;
     font-size: 13.5px;
+    font-weight: 600;
     color: var(--color-text);
     caret-color: var(--color-accent);
     background: var(--color-surface);
     border: 1px solid var(--color-divider);
-    border-radius: var(--radius-md);
+    border-radius: 10px;
   }
 
   .input::placeholder {
     color: var(--faint);
+    font-weight: 500;
   }
 
   .input:hover {
-    border-color: color-mix(in srgb, var(--color-text) 45%, transparent);
+    border-color: var(--color-neutral-400);
   }
 
   .input:focus-visible {
@@ -291,15 +808,15 @@
   .tag {
     display: inline-flex;
     align-items: center;
-    font-size: 11px;
+    font: 600 11px var(--font-body);
     letter-spacing: 0.02em;
-    padding: 3px 7px;
-    border-radius: 6px;
+    padding: 3px 8px;
+    border-radius: 999px;
   }
 
   .tag-accent {
-    background: var(--color-accent-800);
-    color: var(--color-accent-100);
+    background: var(--tint);
+    color: var(--tint-ink);
   }
 
   /*
@@ -348,10 +865,17 @@
   }
 
   .hoverable-ink:hover {
-    color: var(--color-text);
+    color: var(--color-accent);
+  }
+
+  .kpi {
+    transition:
+      transform 0.15s,
+      box-shadow 0.15s;
   }
 
   .kpi:hover {
-    box-shadow: 0 0 0 1px var(--color-neutral-600) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgb(28 27 75 / 0.12) !important;
   }
 }

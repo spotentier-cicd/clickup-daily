@@ -28,9 +28,9 @@ interface TaskDetailProps {
 export function TaskDetail(props: TaskDetailProps) {
   return (
     <aside
-      className="sticky top-[76px] flex max-h-[calc(100vh-96px)] min-w-[300px] flex-[0_1_420px] flex-col gap-[14px] overflow-auto px-5 pt-[18px] pb-5"
+      className="sticky top-[154px] flex max-h-[calc(100vh-174px)] min-w-[300px] flex-[0_1_420px] flex-col gap-[14px] overflow-auto px-5 pt-[18px] pb-5"
       style={{
-        borderRadius: 10,
+        borderRadius: 16,
         background: props.dressed.mine ? 'var(--mine)' : 'var(--color-surface)',
         boxShadow: 'var(--shadow-md)',
       }}
@@ -57,9 +57,9 @@ export function TaskDetailContent({ dressed, column }: TaskDetailProps) {
           <span
             key={label.text}
             style={{
-              font: '500 10.5px/1 var(--font-body)',
+              font: '600 10.5px/1 var(--font-body)',
               padding: '3px 6px',
-              borderRadius: 5,
+              borderRadius: 8,
               color: label.fg,
               background: label.bg,
             }}
@@ -72,7 +72,7 @@ export function TaskDetailContent({ dressed, column }: TaskDetailProps) {
       <h2
         className="m-0"
         style={{
-          font: '500 19px/1.3 var(--font-heading)',
+          font: '700 19px/1.3 var(--font-heading)',
           letterSpacing: '-0.01em',
           textWrap: 'pretty',
         }}
@@ -82,7 +82,7 @@ export function TaskDetailContent({ dressed, column }: TaskDetailProps) {
 
       <dl
         className="m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-[7px]"
-        style={{ font: '400 13px/1.4 var(--font-body)' }}
+        style={{ font: '500 13px/1.4 var(--font-body)' }}
       >
         <dt style={TERM}>Statut</dt>
         <dd className="m-0 flex items-center gap-[7px]">
@@ -147,9 +147,9 @@ export function TaskDetailContent({ dressed, column }: TaskDetailProps) {
             <span
               key={field.name}
               style={{
-                font: '400 11.5px/1 var(--font-body)',
+                font: '500 11.5px/1 var(--font-body)',
                 padding: '4px 7px',
-                borderRadius: 5,
+                borderRadius: 8,
                 background: 'var(--soft)',
               }}
             >
@@ -160,7 +160,7 @@ export function TaskDetailContent({ dressed, column }: TaskDetailProps) {
             <span
               key={tag}
               style={{
-                font: '400 11.5px/1 var(--font-body)',
+                font: '500 11.5px/1 var(--font-body)',
                 padding: '3px 7px',
                 borderRadius: 999,
                 boxShadow: 'inset 0 0 0 1px var(--color-divider)',
@@ -189,7 +189,7 @@ export function TaskDetailContent({ dressed, column }: TaskDetailProps) {
               </span>
               <span
                 style={{
-                  font: '400 11.5px var(--font-body)',
+                  font: '500 11.5px var(--font-body)',
                   color: branch.warn ? 'var(--amber)' : 'var(--faint)',
                 }}
               >
@@ -206,7 +206,7 @@ export function TaskDetailContent({ dressed, column }: TaskDetailProps) {
           <p
             className="m-0"
             style={{
-              font: '400 13px/1.55 var(--font-body)',
+              font: '500 13px/1.55 var(--font-body)',
               textWrap: 'pretty',
               color: 'color-mix(in srgb, var(--color-text) 88%, transparent)',
             }}
@@ -224,9 +224,9 @@ export function TaskDetailContent({ dressed, column }: TaskDetailProps) {
               key={`${comment.author}-${comment.at}`}
               className="px-[10px] py-2"
               style={{
-                borderRadius: 6,
+                borderRadius: 8,
                 background: 'var(--soft)',
-                font: '400 12.5px/1.45 var(--font-body)',
+                font: '500 12.5px/1.45 var(--font-body)',
               }}
             >
               <div
@@ -255,7 +255,7 @@ export function TaskDetailContent({ dressed, column }: TaskDetailProps) {
 const TERM: CSSProperties = { color: 'var(--muted)' }
 
 const SECTION: CSSProperties = {
-  font: '500 11px var(--font-body)',
+  font: '600 11px var(--font-body)',
   letterSpacing: '.08em',
   textTransform: 'uppercase',
   color: 'var(--faint)',

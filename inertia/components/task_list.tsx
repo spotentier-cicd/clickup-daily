@@ -30,7 +30,7 @@ export function TaskList({ groups, selected, onSelect }: TaskListProps) {
               className="size-[9px] rounded-full"
               style={{ background: column.color, boxShadow: `0 0 10px ${column.color}` }}
             />
-            <span style={{ font: '500 13.5px var(--font-body)' }}>{column.label}</span>
+            <span style={{ font: '600 13.5px var(--font-body)' }}>{column.label}</span>
             <span className="num" style={{ font: '500 12px var(--mono)', color: 'var(--faint)' }}>
               {tasks.length}
             </span>
@@ -67,7 +67,7 @@ function Row({
       onClick={() => onSelect(task.id)}
       className="hoverable relative grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border-0 py-[10px] pr-3 pl-4 text-left"
       style={{
-        borderRadius: 8,
+        borderRadius: 12,
         fontFamily: 'var(--font-body)',
         color: 'var(--color-text)',
         background: selected
@@ -88,13 +88,13 @@ function Row({
           <span className="num" style={{ font: '500 11.5px var(--mono)', color: 'var(--ref)' }}>
             {task.ref}
           </span>
-          <span className="truncate" style={{ font: '500 14px/1.35 var(--font-body)' }}>
+          <span className="truncate" style={{ font: '600 14px/1.35 var(--font-body)' }}>
             {task.name}
           </span>
         </span>
         <span
           className="flex flex-wrap items-center gap-x-[10px] gap-y-[3px]"
-          style={{ font: '400 12px var(--font-body)', color: 'var(--muted)' }}
+          style={{ font: '500 12px var(--font-body)', color: 'var(--muted)' }}
         >
           <span className="flex items-center gap-[5px]">
             <span className="size-[6px] rounded-full" style={{ background: dressed.envColor }} />
@@ -113,7 +113,7 @@ function Row({
 
       <span
         className="flex items-center gap-3"
-        style={{ font: '400 12px var(--font-body)', color: 'var(--faint)' }}
+        style={{ font: '500 12px var(--font-body)', color: 'var(--faint)' }}
       >
         {dressed.due && (
           <span style={{ color: dressed.due.late ? 'var(--red)' : 'var(--muted)' }}>

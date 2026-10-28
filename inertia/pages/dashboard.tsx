@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { router, usePage } from '@inertiajs/react'
 import { Link } from '@adonisjs/inertia/react'
-import { WarningCircle } from '@phosphor-icons/react'
-import { Sidebar } from '@/components/sidebar'
-import { Toolbar } from '@/components/toolbar'
+import { ArrowRight, Stack, WarningCircle } from '@phosphor-icons/react'
+import { Topbar } from '@/components/topbar'
+import { NotchNav } from '@/components/notch_nav'
 import { ScopePopover } from '@/components/scope_popover'
 import { Synthesis } from '@/components/synthesis'
 import { TaskList } from '@/components/task_list'
@@ -16,8 +16,9 @@ import { followedListIds, followedSpaces } from '#domain/scope'
 import { matchesSearch } from '@/lib/filters'
 import { filterReport, useProjectPreferences } from '@/lib/projects'
 import { buildTabs } from '@/lib/tabs'
+import { buildModules, moduleOf, softOf } from '@/lib/modules'
 import { readTab, writeTab } from '@/lib/view'
-import { applyTheme, nextTheme, readTheme, type Theme } from '@/lib/theme'
+import { applyTheme, readTheme, type Theme } from '@/lib/theme'
 import { formatDateTime } from '@/lib/format'
 import type {
   FieldUsage,
@@ -25,15 +26,16 @@ import type {
   ProjectPreferences,
   ScopePreferences,
 } from '@/lib/projects'
+import type { AppModule } from '@/lib/modules'
 import type { KanbanCard } from '@/lib/kanban'
 import type { Report, VeilleArticle } from '@/lib/report'
 
 /*
 | LE TABLEAU DE BORD.
 |
-| Une colonne de navigation, une barre de commande, et une zone qui change de
-| nature selon l'onglet : la synthèse du matin, le tableau personnel, une liste
-| de tâches avec son panneau de détail, ou la veille.
+| Une barre bleu nuit, un notch qui dit où on est, et une zone qui change de
+| nature selon la page ouverte : la synthèse du matin, le tableau personnel,
+| une liste de tâches avec son panneau de détail, ou la veille.
 |
 | Tout le filtrage est UNE SEULE cascade, dans cet ordre : le périmètre (côté
 | serveur, persisté), puis la recherche et « mes tâches », puis l'onglet. Les
@@ -238,33 +240,13 @@ export default function Dashboard({
       }
     )
 
-  return (
-    <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)]">
-      <Sidebar
-        tabs={tabs}
-        active={current.key}
-        onSelect={go}
-        generatedAt={report.generatedAt}
-        me={report.me.name}
-        pointage={report.pointage}
-        days={days}
-        day={day}
-        archive={archive}
-      />
+  const modules = buildModules(tabs)
+  const activeModule = moduleOf(modules, current.key)
 
-      <div className="flex min-w-0 flex-col">
-        <Toolbar
-          search={search}
-          onSearch={setSearch}
-          searchRef={searchRef}
-          mineOnly={mineOnly}
-          onMineOnly={() => setMineOnly((only) => !only)}
-          refreshing={refreshing}
-          elapsed={elapsed}
-          onRefresh={refresh}
-          error={flash.error ?? null}
-          theme={theme}
-          onTheme={() => setTheme(nextTheme(theme))}
+  return (
+    <div className="flex min-h-screen flex-col">
+      <div className="appbar-stack">
+        <Topbar
           scope={
             <ScopePopover
               catalog={visibleCatalog}
@@ -276,70 +258,94 @@ export default function Dashboard({
               onOpenChange={setScopeOpen}
             />
           }
+          search={search}
+          onSearch={setSearch}
+          searchRef={searchRef}
+          mineOnly={mineOnly}
+          mineCount={tabs.find((entry) => entry.key === 'mine')?.count ?? 0}
+          onMineOnly={() => setMineOnly((only) => !only)}
+          refreshing={refreshing}
+          elapsed={elapsed}
+          onRefresh={refresh}
+          error={flash.error ?? null}
+          theme={theme}
+          onTheme={setTheme}
+          me={report.me.name}
+          generatedAt={report.generatedAt}
+          pointage={report.pointage}
+          days={days}
+          day={day}
+          archive={archive}
         />
 
-        {stale && <StaleNotice generatedAt={report.generatedAt} />}
-        {followedListIds(scope).length === 0 && <NoScopeNotice />}
-        {followedListIds(scope).length > 0 &&
-          report.tasks.length > 0 &&
-          scoped.hiddenByScope === report.tasks.length && <OutOfScopeNotice />}
+        <div className="notch-band">
+          <NotchNav modules={modules} current={activeModule} page={current.key} onSelect={go} />
+        </div>
+      </div>
 
-        {current.key === 'today' && (
-          <Synthesis
+      {stale && <StaleNotice generatedAt={report.generatedAt} />}
+      {followedListIds(scope).length === 0 && <NoScopeNotice />}
+      {followedListIds(scope).length > 0 &&
+        report.tasks.length > 0 &&
+        scoped.hiddenByScope === report.tasks.length && <OutOfScopeNotice />}
+
+      {current.key === 'today' && (
+        <Synthesis
+          report={report}
+          scoped={scoped}
+          visible={visible}
+          environments={environments}
+          envColors={envColors}
+          onTab={go}
+          onResetScope={projects.reset}
+          onOpenTask={setOpenTask}
+        />
+      )}
+
+      <main className="mx-auto w-full max-w-[1760px] px-6 pt-6 pb-8">
+        {current.key !== 'today' && <PageHead module={activeModule} page={current.label} />}
+
+        {current.key === 'kanban' && (
+          <KanbanBoard
+            cards={kanban}
             report={report}
-            scoped={scoped}
-            visible={visible}
-            environments={environments}
-            envColors={envColors}
-            onTab={go}
-            onResetScope={projects.reset}
+            tasks={scoped.tasks}
+            search={search}
             onOpenTask={setOpenTask}
           />
         )}
 
-        <main className="mx-auto w-full max-w-[1760px] px-7 pt-[22px] pb-7">
-          {current.key === 'kanban' && (
-            <KanbanBoard
-              cards={kanban}
-              report={report}
-              tasks={scoped.tasks}
-              search={search}
-              onOpenTask={setOpenTask}
-            />
-          )}
+        {current.key === 'veille' && report.veille && (
+          <VeilleBoard
+            veille={report.veille}
+            articles={articles}
+            generatedAt={report.generatedAt}
+          />
+        )}
 
-          {current.key === 'veille' && report.veille && (
-            <VeilleBoard
-              veille={report.veille}
-              articles={articles}
-              generatedAt={report.generatedAt}
-            />
-          )}
+        {current.filter && groups.length === 0 && (
+          <div
+            className="py-16 text-center"
+            style={{ font: '600 14px var(--font-body)', color: 'var(--muted)' }}
+          >
+            Aucune tâche ne correspond.
+          </div>
+        )}
 
-          {current.filter && groups.length === 0 && (
-            <div
-              className="py-16 text-center"
-              style={{ font: '400 14px var(--font-body)', color: 'var(--muted)' }}
-            >
-              Aucune tâche ne correspond.
-            </div>
-          )}
+        {current.filter && groups.length > 0 && (
+          <div className="flex flex-wrap items-start gap-[22px]">
+            <TaskList groups={groups} selected={shown?.task.id ?? null} onSelect={setSelected} />
+            {shown && (
+              <TaskDetail
+                dressed={shown}
+                column={report.columns.find((column) => column.key === shown.task.column)}
+              />
+            )}
+          </div>
+        )}
+      </main>
 
-          {current.filter && groups.length > 0 && (
-            <div className="flex flex-wrap items-start gap-[22px]">
-              <TaskList groups={groups} selected={shown?.task.id ?? null} onSelect={setSelected} />
-              {shown && (
-                <TaskDetail
-                  dressed={shown}
-                  column={report.columns.find((column) => column.key === shown.task.column)}
-                />
-              )}
-            </div>
-          )}
-        </main>
-
-        <Legend report={report} />
-      </div>
+      <Legend report={report} />
 
       {sheet && (
         <TaskSheet
@@ -348,6 +354,39 @@ export default function Dashboard({
           onClose={() => setOpenTask(null)}
         />
       )}
+    </div>
+  )
+}
+
+/**
+ * Le titre d'une page, sous le notch.
+ *
+ * Le notch dit où on peut aller ; cet en-tête dit où on est, et répète la
+ * couleur du module pour que les deux se répondent. La synthèse n'en a pas :
+ * elle porte déjà son propre titre.
+ */
+function PageHead({ module, page }: { module: AppModule; page: string }) {
+  const Glyph = module.icon
+
+  return (
+    <div className="mb-5 flex items-center gap-[14px]">
+      <span
+        className="grid size-11 flex-none place-items-center"
+        style={{ borderRadius: 12, background: softOf(module.color), color: module.color }}
+      >
+        <Glyph size={22} weight="bold" />
+      </span>
+      <div className="min-w-0">
+        <div style={{ font: '700 12px var(--font-body)', color: 'var(--muted)' }}>
+          {module.label === page ? 'Point ClickUp' : `Point ClickUp › ${module.label}`}
+        </div>
+        <h1
+          className="m-0 mt-[2px]"
+          style={{ font: '700 24px/1.2 var(--font-heading)', color: 'var(--color-title)' }}
+        >
+          {page}
+        </h1>
+      </div>
     </div>
   )
 }
@@ -365,10 +404,10 @@ function Notice({ children }: { children: React.ReactNode }) {
       <div
         className="flex flex-wrap items-center gap-2 px-[14px] py-3"
         style={{
-          borderRadius: 8,
+          borderRadius: 12,
           background: 'color-mix(in srgb, var(--amber) 10%, var(--color-surface))',
           boxShadow: '0 0 0 1px color-mix(in srgb, var(--amber) 35%, transparent)',
-          font: '400 13px/1.5 var(--font-body)',
+          font: '500 13px/1.5 var(--font-body)',
         }}
       >
         <WarningCircle size={16} color="var(--amber)" className="shrink-0" />
@@ -443,7 +482,7 @@ function Legend({ report }: { report: Report }) {
       <div className="rule" />
       <div
         className="flex flex-wrap items-center gap-x-5 gap-y-2"
-        style={{ font: '400 12px var(--font-body)', color: 'var(--muted)' }}
+        style={{ font: '500 12px var(--font-body)', color: 'var(--muted)' }}
       >
         <span className="flex items-center gap-[7px]">
           <span
@@ -491,24 +530,60 @@ function matchesArticle(article: VeilleArticle, query: string): boolean {
 
 function EmptyState() {
   return (
-    <div className="mx-auto max-w-lg px-6 py-24 text-center">
-      <h1 className="m-0" style={{ font: '500 24px/1.2 var(--font-heading)' }}>
-        Point ClickUp
-      </h1>
-      <p style={{ font: '400 13.5px/1.6 var(--font-body)', color: 'var(--muted)' }}>
-        Aucun rapport enregistré pour l’instant. Choisissez d’abord les espaces à suivre dans le{' '}
-        <Link href="/parametres" style={{ color: 'var(--color-accent)' }}>
-          paramétrage
-        </Link>
-        , puis lancez une collecte :
+    <div className="mx-auto flex max-w-[560px] flex-col gap-5 px-6 py-24">
+      <div>
+        <p className="kicker m-0">Point ClickUp</p>
+        <h1
+          className="m-0 mt-[6px]"
+          style={{ font: '700 28px/1.15 var(--font-heading)', color: 'var(--color-title)' }}
+        >
+          Aucun rapport collecté
+        </h1>
+      </div>
+
+      <p className="m-0" style={{ font: '500 13.5px/1.6 var(--font-body)', color: 'var(--muted)' }}>
+        Choisissez d’abord les espaces et les listes à suivre : rien n’entre dans le tableau qui
+        n’ait été coché là.
+      </p>
+
+      <Link
+        href="/parametres"
+        className="cta"
+        style={
+          {
+            '--cta-color': 'var(--color-accent)',
+            '--cta-soft': 'var(--color-accent-soft)',
+          } as CSSProperties
+        }
+      >
+        <div className="cta-top">
+          <span className="cta-vis">
+            <Stack size={24} weight="bold" />
+          </span>
+          <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
+            <span className="kicker">Première étape</span>
+            <span
+              style={{ font: '700 16px/1.25 var(--font-heading)', color: 'var(--color-title)' }}
+            >
+              Choisir les listes à suivre
+            </span>
+          </div>
+          <span className="cta-round">
+            <ArrowRight size={15} weight="bold" />
+          </span>
+        </div>
+      </Link>
+
+      <p className="m-0" style={{ font: '500 12.5px/1.6 var(--font-body)', color: 'var(--muted)' }}>
+        Puis lancez une collecte :
       </p>
       <pre
-        className="px-3 py-2 text-left"
+        className="m-0 px-3 py-[10px]"
         style={{
-          borderRadius: 8,
+          borderRadius: 12,
           background: 'var(--color-surface)',
           boxShadow: 'var(--shadow-sm)',
-          font: '400 13px var(--mono)',
+          font: '500 13px var(--mono)',
         }}
       >
         node ace daily:report

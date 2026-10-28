@@ -10,9 +10,10 @@ import {
   UserPlus,
   WarningOctagon,
 } from '@phosphor-icons/react'
+import { Card } from '@/components/card'
 import { WeekCard } from '@/components/week_card'
 import { dressReason } from '@/lib/reasons'
-import { CARD, KICKER, REF } from '@/lib/styles'
+import { REF } from '@/lib/styles'
 import { formatDateTime, formatHours, formatLongDate, formatTime, formatUsd } from '@/lib/format'
 import type { Icon } from '@phosphor-icons/react'
 import type { FilteredReport } from '@/lib/projects'
@@ -124,20 +125,22 @@ export function Synthesis({
   ].filter((kpi) => kpi.value !== 0)
 
   return (
-    <section className="mx-auto flex w-full max-w-[1760px] flex-col gap-[22px] px-7 py-[30px]">
-      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-[6px]">
-        <h1
-          className="m-0"
-          style={{ font: '500 30px/1 var(--font-heading)', letterSpacing: '-0.02em' }}
-        >
-          Aujourd’hui
-        </h1>
+    <section className="mx-auto flex w-full max-w-[1760px] flex-col gap-[22px] px-6 pt-7 pb-[30px]">
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+        <div>
+          <p className="kicker m-0">Point ClickUp{report.me.name && ` · ${report.me.name}`}</p>
+          <h1
+            className="m-0 mt-[6px]"
+            style={{ font: '700 28px/1.15 var(--font-heading)', color: 'var(--color-title)' }}
+          >
+            Aujourd’hui
+          </h1>
+        </div>
         <div
           className="first-letter:uppercase"
-          style={{ font: '400 13.5px var(--font-body)', color: 'var(--muted)' }}
+          style={{ font: '500 12.5px var(--font-body)', color: 'var(--muted)' }}
         >
           {formatLongDate(report.generatedAt)} · généré à {formatTime(report.generatedAt)}
-          {report.me.name && ` · ${report.me.name}`}
         </div>
       </div>
 
@@ -147,9 +150,9 @@ export function Synthesis({
             key={kpi.label}
             type="button"
             onClick={kpi.onClick}
-            className="kpi flex min-w-[96px] cursor-pointer flex-col items-start gap-[5px] border-0 px-[14px] pt-[11px] pb-[10px] text-left"
+            className="kpi flex min-w-[104px] cursor-pointer flex-col items-start gap-[6px] border-0 px-4 pt-3 pb-[11px] text-left"
             style={{
-              borderRadius: 8,
+              borderRadius: 12,
               background: kpi.bg ?? 'var(--color-surface)',
               boxShadow: kpi.shadow ?? 'var(--shadow-sm)',
               color: 'var(--color-text)',
@@ -158,14 +161,14 @@ export function Synthesis({
             <span
               className="num"
               style={{
-                font: '500 22px/1 var(--font-heading)',
-                letterSpacing: '-0.02em',
-                color: kpi.fg ?? 'var(--color-text)',
+                font: '700 24px/1 var(--font-heading)',
+                letterSpacing: '-0.01em',
+                color: kpi.fg ?? 'var(--color-title)',
               }}
             >
               {kpi.value}
             </span>
-            <span style={{ font: '400 12px/1.2 var(--font-body)', color: 'var(--muted)' }}>
+            <span style={{ font: '500 12px/1.2 var(--font-body)', color: 'var(--muted)' }}>
               {kpi.label}
             </span>
           </button>
@@ -192,7 +195,7 @@ export function Synthesis({
       {/* Les espaces et leur couleur, une fois, pour que les pastilles se lisent. */}
       <div
         className="flex flex-wrap items-center gap-x-5 gap-y-2"
-        style={{ font: '400 12px var(--font-body)', color: 'var(--muted)' }}
+        style={{ font: '500 12px var(--font-body)', color: 'var(--muted)' }}
       >
         {environments.map((environment) => (
           <span key={environment.key} className="flex items-center gap-2">
@@ -233,104 +236,94 @@ function UnblockCard({
   const entries = scoped.blockers.slice(0, 12)
 
   return (
-    <section
-      className="overflow-hidden"
-      style={{
-        background: 'color-mix(in srgb, var(--red) 7%, var(--color-surface))',
-        borderRadius: 8,
-        boxShadow: '0 0 0 1px color-mix(in srgb, var(--red) 30%, transparent)',
-      }}
+    <Card
+      rail="var(--red)"
+      mark={WarningOctagon}
+      kicker="À débloquer en premier"
+      count={scoped.blockers.length}
+      note="Ce qui attend une décision de votre part ce matin"
+      className="gap-[14px]"
     >
-      <div className="h-[2px]" style={{ background: 'var(--red)' }} />
-      <div className="flex flex-col gap-[14px] px-[18px] pt-4 pb-[18px]">
-        <div className="flex items-center gap-2" style={{ ...KICKER, color: 'var(--red)' }}>
-          <WarningOctagon size={15} />À débloquer en premier
-          <span className="num" style={{ fontFamily: 'var(--mono)', letterSpacing: 0 }}>
-            {scoped.blockers.length}
-          </span>
-        </div>
-
-        {entries.length === 0 ? (
-          <p className="m-0" style={{ font: '400 13.5px var(--font-body)', color: 'var(--muted)' }}>
-            Rien ne bloque ce matin.
-          </p>
-        ) : (
-          <ol className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,330px),1fr))] gap-x-7 gap-y-[14px] p-0">
-            {entries.map((blocker, index) => (
-              <li
-                key={blocker.task.id}
-                className="grid grid-cols-[18px_minmax(0,1fr)] gap-x-2 gap-y-0"
-              >
-                <span
-                  className="num"
-                  style={{ font: '500 12px/20px var(--mono)', color: 'var(--faint)' }}
-                >
-                  {index + 1}
-                </span>
-                <div className="flex flex-col gap-[5px]">
-                  <button
-                    type="button"
-                    onClick={() => onOpenTask(blocker.task.id)}
-                    className="hoverable-ink cursor-pointer border-0 bg-transparent p-0 text-left"
-                    style={{
-                      font: '500 14px/1.4 var(--font-body)',
-                      color: 'inherit',
-                      textWrap: 'pretty',
-                    }}
-                  >
-                    <span
-                      className="mr-[7px]"
-                      style={{ font: '500 12px var(--mono)', color: 'var(--ref)' }}
-                    >
-                      {blocker.task.ref}
-                    </span>
-                    {blocker.task.name}
-                  </button>
-                  <div className="flex flex-col gap-[3px]">
-                    {blocker.reasons.map((reason) => {
-                      const dressed = dressReason(reason)
-                      const Glyph = dressed.icon
-
-                      return (
-                        <div
-                          key={reason}
-                          className="flex items-center gap-[6px]"
-                          style={{
-                            font: '400 12.5px/1.35 var(--font-body)',
-                            color: dressed.color,
-                          }}
-                        >
-                          <Glyph size={13} className="shrink-0" />
-                          {dressed.text}
-                        </div>
-                      )
-                    })}
-                  </div>
-                  <div style={{ font: '400 11.5px var(--font-body)', color: 'var(--faint)' }}>
-                    {blocker.task.envLabel} · {blocker.task.listName} · {blocker.task.columnLabel}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
-
-        {scoped.hiddenBlockers.length > 0 && (
-          <div style={{ font: '400 12px var(--font-body)', color: 'var(--muted)' }}>
-            {scoped.hiddenBlockers.length} blocage
-            {scoped.hiddenBlockers.length > 1 ? 's' : ''} dans un projet masqué{' '}
-            <button
-              type="button"
-              onClick={onReset}
-              className="cursor-pointer border-0 bg-transparent p-0 underline"
-              style={{ color: 'var(--red)' }}
+      {entries.length === 0 ? (
+        <p className="m-0" style={{ font: '500 13.5px var(--font-body)', color: 'var(--muted)' }}>
+          Rien ne bloque ce matin.
+        </p>
+      ) : (
+        <ol className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,330px),1fr))] gap-x-7 gap-y-[14px] p-0">
+          {entries.map((blocker, index) => (
+            <li
+              key={blocker.task.id}
+              className="grid grid-cols-[18px_minmax(0,1fr)] gap-x-2 gap-y-0"
             >
-              afficher
-            </button>
-          </div>
-        )}
-      </div>
-    </section>
+              <span
+                className="num"
+                style={{ font: '500 12px/20px var(--mono)', color: 'var(--faint)' }}
+              >
+                {index + 1}
+              </span>
+              <div className="flex flex-col gap-[5px]">
+                <button
+                  type="button"
+                  onClick={() => onOpenTask(blocker.task.id)}
+                  className="hoverable-ink cursor-pointer border-0 bg-transparent p-0 text-left"
+                  style={{
+                    font: '600 14px/1.4 var(--font-body)',
+                    color: 'inherit',
+                    textWrap: 'pretty',
+                  }}
+                >
+                  <span
+                    className="mr-[7px]"
+                    style={{ font: '500 12px var(--mono)', color: 'var(--ref)' }}
+                  >
+                    {blocker.task.ref}
+                  </span>
+                  {blocker.task.name}
+                </button>
+                <div className="flex flex-col gap-[3px]">
+                  {blocker.reasons.map((reason) => {
+                    const dressed = dressReason(reason)
+                    const Glyph = dressed.icon
+
+                    return (
+                      <div
+                        key={reason}
+                        className="flex items-center gap-[6px]"
+                        style={{
+                          font: '500 12.5px/1.35 var(--font-body)',
+                          color: dressed.color,
+                        }}
+                      >
+                        <Glyph size={13} className="shrink-0" />
+                        {dressed.text}
+                      </div>
+                    )
+                  })}
+                </div>
+                <div style={{ font: '500 11.5px var(--font-body)', color: 'var(--faint)' }}>
+                  {blocker.task.envLabel} · {blocker.task.listName} · {blocker.task.columnLabel}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      {scoped.hiddenBlockers.length > 0 && (
+        <div style={{ font: '500 12px var(--font-body)', color: 'var(--muted)' }}>
+          {scoped.hiddenBlockers.length} blocage
+          {scoped.hiddenBlockers.length > 1 ? 's' : ''} dans un projet masqué{' '}
+          <button
+            type="button"
+            onClick={onReset}
+            className="cursor-pointer border-0 bg-transparent p-0 underline"
+            style={{ color: 'var(--red)' }}
+          >
+            afficher
+          </button>
+        </div>
+      )}
+    </Card>
   )
 }
 
@@ -351,14 +344,15 @@ function FocusCard({
     .filter((group) => group.tasks.length > 0)
 
   return (
-    <section style={CARD} className="flex flex-col gap-4">
-      <div className="flex items-center gap-2" style={KICKER}>
-        <Crosshair size={15} />
-        Focus du jour
-      </div>
-
+    <Card
+      rail="var(--color-accent)"
+      mark={Crosshair}
+      kicker="Focus du jour"
+      note="Mes tâches, rangées par étape du workflow"
+      className="gap-4"
+    >
       {groups.length === 0 && (
-        <p className="m-0" style={{ font: '400 13.5px var(--font-body)', color: 'var(--muted)' }}>
+        <p className="m-0" style={{ font: '500 13.5px var(--font-body)', color: 'var(--muted)' }}>
           Aucune tâche à mon nom dans ce périmètre.
         </p>
       )}
@@ -367,7 +361,7 @@ function FocusCard({
         <div key={column.key} className="flex flex-col gap-[6px]">
           <div
             className="flex items-center gap-[7px]"
-            style={{ font: '500 12px var(--font-body)', color: 'var(--muted)' }}
+            style={{ font: '600 12px var(--font-body)', color: 'var(--muted)' }}
           >
             <span className="size-2 rounded-full" style={{ background: column.color }} />
             {column.label}
@@ -385,7 +379,7 @@ function FocusCard({
         <div className="rule-top flex flex-col gap-[6px] pt-3">
           <div
             className="flex items-center gap-[7px]"
-            style={{ font: '500 12px var(--font-body)', color: 'var(--muted)' }}
+            style={{ font: '600 12px var(--font-body)', color: 'var(--muted)' }}
           >
             <Eye size={13} />
             Revues de code à faire
@@ -398,7 +392,7 @@ function FocusCard({
           ))}
         </div>
       )}
-    </section>
+    </Card>
   )
 }
 
@@ -420,7 +414,7 @@ function TitleLine({
   return (
     <div
       className="flex items-baseline gap-2 pl-[15px]"
-      style={{ font: '400 13.5px/1.35 var(--font-body)' }}
+      style={{ font: '500 13.5px/1.35 var(--font-body)' }}
     >
       <button
         type="button"
@@ -489,26 +483,19 @@ function ChangesCard({ report, scoped }: { report: Report; scoped: FilteredRepor
   ].filter((group) => group.items.length > 0)
 
   return (
-    <section style={CARD} className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2" style={KICKER}>
-        <span className="flex items-center gap-2">
-          <GitDiff size={15} />
-          Changements
-        </span>
-        <span
-          style={{
-            font: '400 12px var(--font-body)',
-            letterSpacing: 0,
-            textTransform: 'none',
-            color: 'var(--faint)',
-          }}
-        >
-          {scoped.diff.since ? `depuis le ${formatDateTime(scoped.diff.since)}` : 'premier rapport'}
-        </span>
-      </div>
-
+    <Card
+      rail="#6941c6"
+      mark={GitDiff}
+      kicker="Changements"
+      note={
+        scoped.diff.since
+          ? `Depuis le ${formatDateTime(scoped.diff.since)}`
+          : 'Premier rapport collecté'
+      }
+      className="gap-4"
+    >
       {groups.length === 0 && (
-        <p className="m-0" style={{ font: '400 13.5px var(--font-body)', color: 'var(--muted)' }}>
+        <p className="m-0" style={{ font: '500 13.5px var(--font-body)', color: 'var(--muted)' }}>
           {scoped.diff.since
             ? 'Rien n’a bougé depuis le rapport précédent.'
             : 'Premier rapport : rien à comparer.'}
@@ -522,7 +509,7 @@ function ChangesCard({ report, scoped }: { report: Report; scoped: FilteredRepor
           <div key={group.label} className="flex flex-col gap-[6px]">
             <div
               className="flex items-center gap-[7px]"
-              style={{ font: '500 12px var(--font-body)', color: 'var(--muted)' }}
+              style={{ font: '600 12px var(--font-body)', color: 'var(--muted)' }}
             >
               <Glyph size={13} color={group.color} />
               {group.label}
@@ -534,7 +521,7 @@ function ChangesCard({ report, scoped }: { report: Report; scoped: FilteredRepor
               <div
                 key={item.key}
                 className="flex flex-wrap items-baseline gap-x-2 gap-y-[2px] pl-5"
-                style={{ font: '400 13.5px/1.35 var(--font-body)' }}
+                style={{ font: '500 13.5px/1.35 var(--font-body)' }}
               >
                 <span style={REF}>{item.ref}</span>
                 <span>{item.name}</span>
@@ -555,12 +542,12 @@ function ChangesCard({ report, scoped }: { report: Report; scoped: FilteredRepor
       })}
 
       {/* Le rapport sait combien de tâches il a écartées : autant le dire ici. */}
-      <div style={{ font: '400 11.5px var(--font-body)', color: 'var(--faint)' }}>
+      <div style={{ font: '500 11.5px var(--font-body)', color: 'var(--faint)' }}>
         {report.stats.total} tâches ramenées
         {report.stats.outOfScope > 0 &&
           ` · ${report.stats.outOfScope} écartées : statut non coché pour leur liste`}
       </div>
-    </section>
+    </Card>
   )
 }
 
@@ -579,20 +566,16 @@ function MentionsCard({
   onOpenTask: (id: string) => void
 }) {
   return (
-    <section style={CARD} className="flex flex-col gap-[14px]">
-      <div className="flex items-center gap-2" style={KICKER}>
-        <ChatsCircle size={15} />
-        On me parle
-        <span
-          className="num"
-          style={{ fontFamily: 'var(--mono)', letterSpacing: 0, color: 'var(--faint)' }}
-        >
-          {scoped.mentions.length}
-        </span>
-      </div>
-
+    <Card
+      rail="#0b4f8a"
+      mark={ChatsCircle}
+      kicker="On me parle"
+      count={scoped.mentions.length}
+      note={`Commentaires qui me citent · ${lookback} derniers jours`}
+      className="gap-[14px]"
+    >
       {scoped.mentions.length === 0 ? (
-        <p className="m-0" style={{ font: '400 13.5px var(--font-body)', color: 'var(--muted)' }}>
+        <p className="m-0" style={{ font: '500 13.5px var(--font-body)', color: 'var(--muted)' }}>
           Personne ne m’a cité sur les {lookback} derniers jours.
         </p>
       ) : (
@@ -604,7 +587,7 @@ function MentionsCard({
             <span
               className="grid size-7 place-items-center rounded-full"
               style={{
-                font: '500 11px var(--font-body)',
+                font: '600 11px var(--font-body)',
                 background: 'var(--tint)',
                 color: 'var(--tint-ink)',
               }}
@@ -614,7 +597,7 @@ function MentionsCard({
             <div className="flex flex-col gap-[3px]">
               <div
                 className="flex flex-wrap items-center gap-x-[7px] gap-y-1"
-                style={{ font: '400 12px var(--font-body)', color: 'var(--muted)' }}
+                style={{ font: '500 12px var(--font-body)', color: 'var(--muted)' }}
               >
                 <span style={{ fontWeight: 500, color: 'var(--color-text)' }}>
                   {mention.author}
@@ -650,7 +633,7 @@ function MentionsCard({
               <p
                 className="m-0"
                 style={{
-                  font: '400 13px/1.5 var(--font-body)',
+                  font: '500 13px/1.5 var(--font-body)',
                   color: 'color-mix(in srgb, var(--color-text) 85%, transparent)',
                   textWrap: 'pretty',
                 }}
@@ -661,7 +644,7 @@ function MentionsCard({
           </div>
         ))
       )}
-    </section>
+    </Card>
   )
 }
 
@@ -708,24 +691,25 @@ function ClaudeCard({
     .slice(0, 5)
 
   return (
-    <section style={CARD} className="flex flex-col gap-4">
-      <div className="flex items-center gap-2" style={KICKER}>
-        <CurrencyDollar size={15} />
-        Claude ce mois-ci
-      </div>
-
+    <Card
+      rail="#a84d0d"
+      mark={CurrencyDollar}
+      kicker="Claude ce mois-ci"
+      note={`Équivalent API · ${claude.sessions} conversation${claude.sessions > 1 ? 's' : ''}`}
+      className="gap-4"
+    >
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className="num" style={{ font: '500 26px/1 var(--mono)', letterSpacing: '-0.02em' }}>
           {formatUsd(claude.totalUsd)}
         </span>
         {claude.todayUsd > 0 && (
-          <span style={{ font: '400 13px var(--font-body)', color: 'var(--muted)' }}>
+          <span style={{ font: '500 13px var(--font-body)', color: 'var(--muted)' }}>
             dont {formatUsd(claude.todayUsd)} aujourd’hui
           </span>
         )}
       </div>
 
-      <p className="m-0" style={{ font: '400 12px/1.5 var(--font-body)', color: 'var(--faint)' }}>
+      <p className="m-0" style={{ font: '500 12px/1.5 var(--font-body)', color: 'var(--faint)' }}>
         Équivalent au tarif de l’API sur {claude.sessions} conversation
         {claude.sessions > 1 ? 's' : ''}. L’abonnement est à prix fixe : rien n’est facturé.
         Quelques appels auxiliaires ne sont pas transcrits — c’est un plancher.
@@ -737,7 +721,7 @@ function ClaudeCard({
             <div
               key={entry.model}
               className="flex items-baseline justify-between gap-3"
-              style={{ font: '400 12.5px var(--font-body)', color: 'var(--muted)' }}
+              style={{ font: '500 12.5px var(--font-body)', color: 'var(--muted)' }}
             >
               <span className="truncate">{entry.model.replace(/^claude-/, '')}</span>
               <span className="num shrink-0" style={{ fontFamily: 'var(--mono)' }}>
@@ -750,7 +734,7 @@ function ClaudeCard({
 
       {top.length > 0 && (
         <div className="rule-top flex flex-col gap-[6px] pt-3">
-          <div style={{ font: '500 12px var(--font-body)', color: 'var(--muted)' }}>
+          <div style={{ font: '600 12px var(--font-body)', color: 'var(--muted)' }}>
             Rattaché à un ticket
           </div>
           {top.map(({ task, usd }) => (
@@ -762,7 +746,7 @@ function ClaudeCard({
       {claude.unattributedUsd > 0 && (
         <div
           className="flex items-baseline justify-between gap-3"
-          style={{ font: '400 12.5px var(--font-body)', color: 'var(--faint)' }}
+          style={{ font: '500 12.5px var(--font-body)', color: 'var(--faint)' }}
         >
           <span>Sans ticket identifié</span>
           <span className="num shrink-0" style={{ fontFamily: 'var(--mono)' }}>
@@ -774,11 +758,11 @@ function ClaudeCard({
       {claude.unknownModels.length > 0 && (
         <p
           className="m-0"
-          style={{ font: '400 12px/1.45 var(--font-body)', color: 'var(--amber)' }}
+          style={{ font: '500 12px/1.45 var(--font-body)', color: 'var(--amber)' }}
         >
           Hors total, tarif inconnu : {claude.unknownModels.join(', ')}
         </p>
       )}
-    </section>
+    </Card>
   )
 }

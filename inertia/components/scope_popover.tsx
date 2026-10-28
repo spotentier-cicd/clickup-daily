@@ -2,13 +2,13 @@ import { useEffect, useRef } from 'react'
 import { Link } from '@adonisjs/inertia/react'
 import {
   ArrowCounterClockwise,
+  CaretUpDown,
   CheckSquare,
   MinusSquare,
   Square,
   Stack,
 } from '@phosphor-icons/react'
 import { orderedEnvironments } from '#domain/projects'
-import { cn } from 'cn'
 import type { Icon } from '@phosphor-icons/react'
 import type { FieldUsage, ProjectCatalog, ProjectControls } from '@/lib/projects'
 
@@ -70,26 +70,62 @@ export function ScopePopover({
   const shown = lists.filter((list) => projects.isListVisible(list.envKey, list.name)).length
   const hidden = lists.length - shown
 
+  /*
+   * Ce que le bouton de la barre annonce.
+   *
+   * Un seul espace affiché se nomme ; plusieurs se comptent. Le détail — les
+   * listes — tient dans le compteur de la ligne du dessus, parce que c'est à
+   * la liste qu'on coche, pas à l'espace.
+   */
+  const openEnvironments = environments.filter((environment) =>
+    environment.lists.some((list) => projects.isListVisible(list.envKey, list.name))
+  )
+  const title =
+    openEnvironments.length === 1
+      ? openEnvironments[0].label
+      : openEnvironments.length === environments.length
+        ? 'Tous les espaces'
+        : `${openEnvironments.length} espaces sur ${environments.length}`
+
   return (
     <div ref={anchor} className="relative">
       <button
         type="button"
         onClick={() => onOpenChange(!open)}
-        className={cn('btn', hidden > 0 ? 'btn-primary' : 'btn-secondary')}
-        style={{ height: 36 }}
+        className="nav-chip"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={`Changer de périmètre : ${title}`}
       >
-        <Stack size={15} />
-        Périmètre
-        <span className="num" style={{ font: '500 11.5px var(--mono)', color: 'var(--muted)' }}>
-          {shown}/{lists.length}
+        <span
+          className="grid size-8 flex-none place-items-center rounded-lg"
+          style={{ background: '#ffffff', color: 'var(--color-nav)' }}
+        >
+          <Stack size={18} weight="bold" />
         </span>
+        <span className="flex flex-col leading-[1.2]">
+          <span
+            className="num"
+            style={{
+              font: '700 10px var(--font-body)',
+              letterSpacing: '.08em',
+              color: 'var(--color-nav-dim)',
+            }}
+          >
+            PÉRIMÈTRE · {shown}/{lists.length} LISTES
+          </span>
+          <span className="max-w-[220px] truncate" style={{ font: '700 15px var(--font-body)' }}>
+            {title}
+          </span>
+        </span>
+        <CaretUpDown size={16} color="var(--color-nav-dim)" />
       </button>
 
       {open && (
         <div
-          className="absolute top-[calc(100%+8px)] right-0 z-50 flex w-[352px] max-w-[calc(100vw-32px)] flex-col overflow-hidden"
+          className="absolute top-[calc(100%+8px)] left-0 z-50 flex w-[360px] max-w-[calc(100vw-32px)] flex-col overflow-hidden"
           style={{
-            borderRadius: 10,
+            borderRadius: 16,
             background: 'var(--color-surface)',
             boxShadow: 'var(--shadow-lg)',
           }}
@@ -124,7 +160,7 @@ export function ScopePopover({
                     onDoubleClick={() => projects.onlyEnvironment(catalog, environment.key)}
                     title="Clic : afficher ou masquer · double-clic : n’afficher que celui-ci"
                     className="hoverable flex w-full cursor-pointer items-center gap-[9px] rounded-md border-0 bg-transparent px-2 py-[7px] text-left"
-                    style={{ font: '500 13.5px var(--font-body)', color: 'var(--color-text)' }}
+                    style={{ font: '600 13.5px var(--font-body)', color: 'var(--color-text)' }}
                   >
                     <Box on={all} partial={visible > 0} />
                     <span
@@ -152,7 +188,7 @@ export function ScopePopover({
                         title="Clic : afficher ou masquer · double-clic : n’afficher que celle-ci"
                         className="hoverable flex w-full cursor-pointer items-center gap-[9px] rounded-md border-0 bg-transparent py-[6px] pr-2 pl-[30px] text-left"
                         style={{
-                          font: '400 13px var(--font-body)',
+                          font: '500 13px var(--font-body)',
                           color: on ? 'var(--color-text)' : 'var(--muted)',
                         }}
                       >
@@ -183,7 +219,7 @@ export function ScopePopover({
               <div className="rule" />
               <div
                 className="px-[14px] py-2"
-                style={{ font: '400 12px/1.5 var(--font-body)', color: 'var(--muted)' }}
+                style={{ font: '500 12px/1.5 var(--font-body)', color: 'var(--muted)' }}
               >
                 {hiddenByScope} tâche{hiddenByScope > 1 ? 's' : ''} écartée
                 {hiddenByScope > 1 ? 's' : ''} par le périmètre (liste ou statut) —{' '}
@@ -198,7 +234,7 @@ export function ScopePopover({
           <div className="flex items-center justify-between py-2 pr-[10px] pl-[14px]">
             <span
               style={{
-                font: '400 12px var(--font-body)',
+                font: '500 12px var(--font-body)',
                 color: hidden ? 'var(--amber)' : 'var(--muted)',
               }}
             >
@@ -259,7 +295,7 @@ function FieldSection({ fields, projects }: { fields: FieldUsage[]; projects: Pr
             onClick={() => projects.toggleField(field.name)}
             className="hoverable flex w-full cursor-pointer items-center gap-[9px] rounded-md border-0 bg-transparent px-2 py-[6px] text-left"
             style={{
-              font: '400 13px var(--font-body)',
+              font: '500 13px var(--font-body)',
               color: on ? 'var(--color-text)' : 'var(--muted)',
             }}
           >
@@ -287,7 +323,7 @@ function FieldSection({ fields, projects }: { fields: FieldUsage[]; projects: Pr
 }
 
 const KICKER = {
-  font: '500 11px var(--font-body)',
+  font: '700 11px var(--font-body)',
   letterSpacing: '.08em',
   textTransform: 'uppercase',
   color: 'var(--muted)',

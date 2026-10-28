@@ -1,6 +1,6 @@
 import { ClockCounterClockwise, Timer } from '@phosphor-icons/react'
 import { formatDuration, formatHours, formatWeekday, formatWorkDays, pluralize } from '@/lib/format'
-import { CARD, KICKER } from '@/lib/styles'
+import { Card } from '@/components/card'
 import type { Pointage, Task } from '@/lib/report'
 
 /*
@@ -44,24 +44,19 @@ export function WeekCard({ pointage, mine, onOpenTask }: WeekCardProps) {
     .slice(0, 5)
 
   return (
-    <section style={CARD} className="flex flex-col gap-[14px]">
-      <div className="flex items-center justify-between gap-2" style={KICKER}>
-        <span className="flex items-center gap-2">
-          <Timer size={15} />
-          Pointage de la semaine
-        </span>
-        <span
-          className="num"
-          style={{
-            font: '500 13px var(--mono)',
-            letterSpacing: 0,
-            textTransform: 'none',
-            color: 'var(--color-text)',
-          }}
-        >
-          {formatHours(pointage.weekMs)}
-          <span style={{ color: 'var(--faint)' }}> / {formatHours(pointage.weekTargetMs)}</span>
-        </span>
+    <Card
+      rail={late ? 'var(--amber)' : 'var(--green)'}
+      mark={Timer}
+      kicker="Pointage de la semaine"
+      note="Heures saisies dans ClickUp cette semaine"
+      className="gap-[14px]"
+    >
+      <div
+        className="num -mt-[6px]"
+        style={{ font: '600 15px var(--mono)', color: 'var(--color-title)' }}
+      >
+        {formatHours(pointage.weekMs)}
+        <span style={{ color: 'var(--faint)' }}> / {formatHours(pointage.weekTargetMs)}</span>
       </div>
 
       <div className="flex flex-col gap-[6px]">
@@ -82,7 +77,7 @@ export function WeekCard({ pointage, mine, onOpenTask }: WeekCardProps) {
             style={{ left: `${expected}%`, background: 'var(--color-text)' }}
           />
         </div>
-        <div style={{ font: '400 11.5px var(--font-body)', color: 'var(--faint)' }}>
+        <div style={{ font: '500 11.5px var(--font-body)', color: 'var(--faint)' }}>
           trait : {formatHours(expectedMs)} attendues à la fin d’hier
         </div>
       </div>
@@ -97,7 +92,7 @@ export function WeekCard({ pointage, mine, onOpenTask }: WeekCardProps) {
               className="flex flex-col gap-1 px-[9px] py-2"
               style={{ borderRadius: 6, background: 'var(--soft)' }}
             >
-              <span style={{ font: '500 11.5px var(--font-body)', color: 'var(--muted)' }}>
+              <span style={{ font: '600 11.5px var(--font-body)', color: 'var(--muted)' }}>
                 {formatWeekday(day.date)}
                 {day.isToday && ' · auj.'}
               </span>
@@ -127,7 +122,7 @@ export function WeekCard({ pointage, mine, onOpenTask }: WeekCardProps) {
         style={{
           borderRadius: 6,
           background: `color-mix(in srgb, ${late ? 'var(--amber)' : 'var(--green)'} 13%, transparent)`,
-          font: '400 13px/1.4 var(--font-body)',
+          font: '500 13px/1.4 var(--font-body)',
         }}
       >
         <ClockCounterClockwise size={15} color={late ? 'var(--amber)' : 'var(--green)'} />
@@ -149,7 +144,7 @@ export function WeekCard({ pointage, mine, onOpenTask }: WeekCardProps) {
 
       <div
         className="flex flex-col gap-[5px]"
-        style={{ font: '400 12.5px/1.4 var(--font-body)', color: 'var(--muted)' }}
+        style={{ font: '500 12.5px/1.4 var(--font-body)', color: 'var(--muted)' }}
       >
         <div>
           Semaine précédente ·{' '}
@@ -178,7 +173,7 @@ export function WeekCard({ pointage, mine, onOpenTask }: WeekCardProps) {
         <div className="flex flex-col gap-[7px] pt-1">
           <div
             style={{
-              font: '500 11px var(--font-body)',
+              font: '600 11px var(--font-body)',
               letterSpacing: '.08em',
               textTransform: 'uppercase',
               color: 'var(--faint)',
@@ -192,7 +187,7 @@ export function WeekCard({ pointage, mine, onOpenTask }: WeekCardProps) {
               type="button"
               onClick={() => onOpenTask(task.id)}
               className="hoverable-ink grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto_auto] items-baseline gap-2 border-0 bg-transparent p-0 text-left"
-              style={{ font: '400 13px/1.35 var(--font-body)', color: 'inherit' }}
+              style={{ font: '500 13px/1.35 var(--font-body)', color: 'inherit' }}
             >
               <span className="num" style={{ font: '500 11.5px var(--mono)', color: 'var(--ref)' }}>
                 {task.ref}
@@ -214,6 +209,6 @@ export function WeekCard({ pointage, mine, onOpenTask }: WeekCardProps) {
           ))}
         </div>
       )}
-    </section>
+    </Card>
   )
 }

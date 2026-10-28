@@ -18,6 +18,13 @@ export const THEME_LABEL: Record<Theme, string> = {
   dark: 'Thème : sombre',
 }
 
+/* Le libellé du sélecteur à trois positions du menu du compte. */
+export const THEME_SHORT: Record<Theme, string> = {
+  auto: 'Auto',
+  light: 'Clair',
+  dark: 'Sombre',
+}
+
 export function readTheme(): Theme {
   try {
     const stored = localStorage.getItem(KEY)
@@ -45,4 +52,24 @@ export function applyTheme(theme: Theme): void {
   } catch {
     /* Le thème ne survivra pas au rechargement, ce n'est pas grave. */
   }
+
+  syncThemeColor()
+}
+
+/**
+ * La couleur annoncée au système, remise en accord avec la barre.
+ *
+ * En fenêtre autonome — l'application installée — c'est elle qui peint le
+ * cadre autour de la page. Si elle ne suit pas le thème, la barre bleu nuit
+ * se retrouve sertie dans la teinte de l'autre thème.
+ *
+ * Elle est LUE dans la feuille de style plutôt que recopiée ici : les deux
+ * bleus nuit n'existent qu'à un endroit, le jeton --color-nav. Tant que la
+ * feuille n'est pas là, la valeur du gabarit tient.
+ */
+export function syncThemeColor(): void {
+  const nav = getComputedStyle(document.documentElement).getPropertyValue('--color-nav').trim()
+  if (!nav) return
+
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', nav)
 }

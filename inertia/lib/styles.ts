@@ -1,24 +1,30 @@
 import type { CSSProperties } from 'react'
 
 /*
-| Les trois habits partagés par toutes les cartes de la synthèse.
+| Les habits partagés par toutes les cartes.
 |
 | Ils sont écrits une fois ici plutôt que recopiés dans six composants : c'est
-| ce qui garantit qu'une carte ajoutée demain a exactement le même fond, la
-| même ombre et le même intitulé que les autres.
+| ce qui garantit qu'une carte ajoutée demain a exactement le même fond, le
+| même filet et le même intitulé que les autres.
+|
+| La maquette n'a qu'une seule carte : blanche, filet d'un pixel, coins à
+| 12 px — et, quand elle parle de quelque chose de coloré, un liseré de 3 px
+| à gauche qui en porte la couleur. `CARD` est la carte nue ; celle à liseré
+| est le composant `Card`, qui porte en plus son intitulé et son glyphe.
 */
 
-/** Le fond d'une carte : surface, coins doux, filet d'ombre. */
+/** Le fond d'une carte : surface, filet, coins à 12 px. */
 export const CARD: CSSProperties = {
   background: 'var(--color-surface)',
-  borderRadius: 8,
-  boxShadow: 'var(--shadow-sm)',
-  padding: '16px 18px 18px',
+  border: '1px solid var(--color-divider)',
+  borderRadius: 12,
+  boxShadow: '0 1px 2px rgb(28 27 75 / 0.04)',
+  padding: '16px 20px 18px',
 }
 
 /** L'intitulé d'une carte : petites capitales espacées, jamais du gras noir. */
 export const KICKER: CSSProperties = {
-  font: '500 12px var(--font-body)',
+  font: '600 10.5px var(--font-body)',
   letterSpacing: '.08em',
   textTransform: 'uppercase',
   color: 'var(--muted)',
@@ -26,7 +32,7 @@ export const KICKER: CSSProperties = {
 
 /** La référence d'un ticket : toujours en chasse fixe, toujours en accent. */
 export const REF: CSSProperties = {
-  font: '500 11.5px var(--mono)',
+  font: '600 11.5px var(--mono)',
   color: 'var(--ref)',
   flex: 'none',
 }

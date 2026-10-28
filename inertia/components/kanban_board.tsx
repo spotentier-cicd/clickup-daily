@@ -105,8 +105,9 @@ export function KanbanBoard({ cards, report, tasks, search, onOpenTask }: Kanban
             }}
             className="flex min-w-0 flex-col gap-2 p-[10px]"
             style={{
-              borderRadius: 10,
-              background: 'color-mix(in srgb, var(--color-surface) 55%, transparent)',
+              borderRadius: 14,
+              /* La colonne est un creux dans le plan, la carte un relief dessus. */
+              background: 'color-mix(in srgb, var(--color-title) 5%, transparent)',
               outline:
                 over?.column === column.key
                   ? `1px solid ${tint('var(--color-accent)', 55)}`
@@ -118,7 +119,7 @@ export function KanbanBoard({ cards, report, tasks, search, onOpenTask }: Kanban
                 className="size-[9px] rounded-full"
                 style={{ background: column.color, boxShadow: `0 0 10px ${column.color}` }}
               />
-              <span style={{ font: '500 13.5px var(--font-body)' }}>{column.label}</span>
+              <span style={{ font: '600 13.5px var(--font-body)' }}>{column.label}</span>
               <span className="num" style={{ font: '500 12px var(--mono)', color: 'var(--faint)' }}>
                 {search.trim() && list.length !== total ? `${list.length}/${total}` : total}
               </span>
@@ -194,9 +195,9 @@ export function KanbanBoard({ cards, report, tasks, search, onOpenTask }: Kanban
               <p
                 className="m-0 px-2 py-6 text-center"
                 style={{
-                  font: '400 12.5px/1.5 var(--font-body)',
+                  font: '500 12.5px/1.5 var(--font-body)',
                   color: 'var(--faint)',
-                  borderRadius: 8,
+                  borderRadius: 12,
                   outline: `1px dashed ${tint('var(--color-text)', 18)}`,
                 }}
               >
@@ -269,7 +270,7 @@ function Card({
       }}
       className="group flex cursor-grab flex-col gap-[7px] px-3 py-[10px]"
       style={{
-        borderRadius: 8,
+        borderRadius: 12,
         background: 'var(--color-surface)',
         boxShadow: 'var(--shadow-sm)',
         opacity: dragged ? 0.45 : 1,
@@ -303,7 +304,7 @@ function Card({
       </div>
 
       {card.title && (
-        <p className="m-0" style={{ font: '500 13.5px/1.4 var(--font-body)' }}>
+        <p className="m-0" style={{ font: '600 13.5px/1.4 var(--font-body)' }}>
           {card.title}
         </p>
       )}
@@ -318,7 +319,7 @@ function Card({
       {card.comment && (
         <p
           className="m-0 whitespace-pre-wrap"
-          style={{ font: '400 12.5px/1.5 var(--font-body)', color: 'var(--muted)' }}
+          style={{ font: '500 12.5px/1.5 var(--font-body)', color: 'var(--muted)' }}
         >
           {card.comment}
         </p>
@@ -328,9 +329,9 @@ function Card({
         <div
           className="flex items-center gap-2 px-2 py-[6px]"
           style={{
-            borderRadius: 6,
+            borderRadius: 8,
             background: tint('var(--red)', 10),
-            font: '400 12px var(--font-body)',
+            font: '500 12px var(--font-body)',
           }}
         >
           <span className="flex-1">Supprimer cette carte ?</span>
@@ -449,7 +450,7 @@ function Branch({ side, name }: { side: 'front' | 'back'; name: string }) {
       <span
         className="shrink-0"
         style={{
-          font: '500 10px var(--font-body)',
+          font: '600 10px var(--font-body)',
           letterSpacing: '.06em',
           textTransform: 'uppercase',
           color: 'var(--faint)',
@@ -593,7 +594,7 @@ function CardForm({ card, column, tasks, report, onSubmit, onCancel }: CardFormP
       }}
       className="flex flex-col gap-[6px] px-3 py-[10px]"
       style={{
-        borderRadius: 8,
+        borderRadius: 12,
         background: 'var(--color-surface)',
         boxShadow: `0 0 0 1px ${tint('var(--color-accent)', 55)}`,
       }}
@@ -617,7 +618,7 @@ function CardForm({ card, column, tasks, report, onSubmit, onCancel }: CardFormP
       {task && (
         <span
           className="truncate px-1"
-          style={{ font: '400 11.5px var(--font-body)', color: 'var(--green)' }}
+          style={{ font: '500 11.5px var(--font-body)', color: 'var(--green)' }}
         >
           {task.name}
         </span>
@@ -649,7 +650,7 @@ function CardForm({ card, column, tasks, report, onSubmit, onCancel }: CardFormP
       {repos.length > 0 && (
         <span
           className="truncate px-1"
-          style={{ font: '400 11px var(--font-body)', color: 'var(--faint)' }}
+          style={{ font: '500 11px var(--font-body)', color: 'var(--faint)' }}
         >
           trouvée en local : {repos.join(' · ')}
         </span>
@@ -716,7 +717,7 @@ function BranchBox({
       title={name ? `${side} · ${name}` : 'Renseignez d’abord le ticket'}
       className="flex min-w-0 items-center gap-[6px] px-2 py-[6px]"
       style={{
-        borderRadius: 6,
+        borderRadius: 8,
         background: checked ? tint('var(--color-accent)', 10) : 'var(--soft)',
         cursor: name ? 'pointer' : 'default',
         opacity: name ? 1 : 0.5,
@@ -734,7 +735,7 @@ function BranchBox({
       <span
         className="shrink-0"
         style={{
-          font: '500 10px var(--font-body)',
+          font: '600 10px var(--font-body)',
           letterSpacing: '.06em',
           textTransform: 'uppercase',
           color: 'var(--faint)',
