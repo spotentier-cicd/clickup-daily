@@ -224,7 +224,7 @@ il porte les réglages de produit :
 | `git.repos` | Chemins de dépôts locaux, pour rapprocher une branche d'un ticket par sa référence. **Vide par défaut** ; un dépôt introuvable est ignoré sans bruit. |
 | `temps` | Heures attendues par jour et jours ouvrés, pour le suivi de pointage. |
 | `blockers`, `staleAfterDays` | Les seuils : au bout de combien de jours une revue en souffrance, une tâche sans activité ou une recette qui dort remontent. |
-| `mentions`, `enrich` | Profondeur de balayage des commentaires, plafonnée pour tenir le quota d'appels. |
+| `mentions`, `enrich` | Profondeur de balayage des commentaires, plafonnée pour tenir le quota d'appels. Les commentaires d'une tâche sont gardés en cache tant qu'elle n'a pas bougé : seules les tâches modifiées depuis la dernière collecte coûtent un appel. |
 | `veille` | Les flux RSS/Atom suivis et les mots-clés de votre stack. |
 | `claude` | Où sont les transcriptions Claude Code, et comment rattacher une conversation à un ticket. L'interrupteur, lui, est dans /parametres. |
 

@@ -8,6 +8,7 @@ import { ClickUpError } from '#clickup/errors'
 import { ReportBuilder } from '#services/report_builder'
 import { RunRepository } from '#services/run_repository'
 import { PreferencesRepository } from '#services/preferences_repository'
+import { ClickupCacheRepository } from '#services/clickup_cache_repository'
 import { followedListIds } from '#domain/scope'
 import { notify } from '#services/macos_service'
 import { formatDurationMs } from '#domain/time'
@@ -56,7 +57,12 @@ export default class DailyReport extends BaseCommand {
   declare trigger: string
 
   @inject()
-  async run(builder: ReportBuilder, runs: RunRepository, preferences: PreferencesRepository) {
+  async run(
+    builder: ReportBuilder,
+    runs: RunRepository,
+    preferences: PreferencesRepository,
+    cache: ClickupCacheRepository
+  ) {
     const now = DateTime.now().setZone(config.timezone)
     const triggers: RunTrigger[] = ['scheduled', 'manual', 'refresh']
     const trigger = triggers.includes(this.trigger as RunTrigger)
@@ -109,6 +115,7 @@ export default class DailyReport extends BaseCommand {
 
       const run = await runs.save(report, trigger)
       await runs.purge(config.report.keepDays, now)
+      await cache.purge(config.report.keepDays, now)
 
       const gap = report.pointage?.gapMs ?? 0
       const summary =

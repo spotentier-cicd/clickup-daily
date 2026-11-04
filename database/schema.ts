@@ -7,6 +7,33 @@
 import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
+export class ClickupCacheSchema extends BaseModel {
+  static $columns = [
+    'createdAt',
+    'fetchedAt',
+    'id',
+    'key',
+    'payload',
+    'stamp',
+    'updatedAt',
+  ] as const
+  $columns = ClickupCacheSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime | null
+  @column.dateTime()
+  declare fetchedAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare key: string
+  @column()
+  declare payload: string
+  @column()
+  declare stamp: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class KanbanCardSchema extends BaseModel {
   static $columns = [
     'branchBack',

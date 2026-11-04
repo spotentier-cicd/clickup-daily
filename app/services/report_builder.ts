@@ -6,6 +6,7 @@ import { ClickUpError } from '#clickup/errors'
 import { branchesForTask, GitService } from '#services/git_service'
 import { VeilleService } from '#services/veille_service'
 import { ClaudeUsageService } from '#services/claude_usage_service'
+import { ClickupCacheRepository, REVALIDATE_AFTER_HOURS } from '#services/clickup_cache_repository'
 import { buildColumns } from '#domain/task/columns'
 import { toTaskView } from '#domain/task/view'
 import { buildPointage } from '#domain/rules/pointage'
@@ -47,25 +48,40 @@ export interface BuildReportOptions {
   }
 }
 
+/*
+| Ce qu'une collecte s'autorise à relire par run, en plus de ce qui a changé.
+|
+| Le cache des commentaires et des statuts de sortie se fie à la date de
+| modification des tâches. Pour rattraper ce qu'elle ne voit pas, on relit les
+| entrées les plus anciennes par petits lots : jamais assez pour retomber dans
+| le quota, assez pour que tout soit revu en quelques collectes.
+*/
+const REVALIDATE_PER_RUN = 20
+const EXIT_LOOKUPS_PER_RUN = 30
+
 /**
  * Orchestration : collecte, puis domaine, puis Report.
  *
  * Tout ce qui est calcul vit dans app/domain ; ce service ne fait que des
- * appels et du câblage. Les trois espaces partent en parallèle — le limiteur
- * de débit partagé garantit qu'on reste sous le quota de ClickUp.
+ * appels et du câblage. Ce qui ne dépend pas l'un de l'autre part en même
+ * temps — le limiteur de débit partagé garantit qu'on reste sous le quota de
+ * ClickUp — et chaque étape dit ce qu'elle a coûté, pour qu'une collecte
+ * lente se lise dans le journal plutôt qu'au chronomètre.
  */
 @inject()
 export class ReportBuilder {
   constructor(
     private readonly git: GitService,
     private readonly veille: VeilleService,
-    private readonly claude: ClaudeUsageService
+    private readonly claude: ClaudeUsageService,
+    private readonly cache: ClickupCacheRepository
   ) {}
 
   async build(options: BuildReportOptions): Promise<Report> {
     const { config, client, logger, scope, previous = null, skip = {} } = options
     const startedAt = Date.now()
     const now = options.now ?? DateTime.now().setZone(config.timezone)
+    const timed = stageTimer(logger)
 
     /*
      * Rien n'est écrit en dur : le jeton donne l'utilisateur et ses équipes.
@@ -78,7 +94,10 @@ export class ReportBuilder {
     }
     const teamId = team.id
 
-    const me = await client.me()
+    /* Trois lectures qui ne dépendent pas l'une de l'autre : un aller-retour. */
+    const [me, taskTypeNames, spaces] = await timed('Préambule', () =>
+      Promise.all([client.me(), client.customItemTypes(teamId), client.spaces(teamId)])
+    )
     const meUserId = asInt(me.id)
     if (!meUserId) {
       throw new ClickUpError('ClickUp n’a pas rendu d’identifiant pour ce jeton.')
@@ -87,7 +106,6 @@ export class ReportBuilder {
     logger.info(`Équipe ${team.name} · utilisateur ${meName || meUserId}`)
 
     const columns = buildColumns(config.columns)
-    const taskTypeNames = await client.customItemTypes(teamId)
 
     /*
      * Le périmètre est une liste de LISTES, pas d'espaces : c'est le niveau où
@@ -106,10 +124,9 @@ export class ReportBuilder {
     }
 
     /* Les noms d'espaces : les tâches ne portent que leur identifiant. */
-    const spaces = await client.spaces(teamId)
     const spaceNames = new Map(spaces.map((space) => [space.id, space.name]))
 
-    const raw = await client.teamTasks(teamId, listIds, statuses)
+    const raw = await timed('Tâches', () => client.teamTasks(teamId, listIds, statuses))
 
     const tasks: TaskView[] = []
     const seen = new Set<string>()
@@ -159,34 +176,42 @@ export class ReportBuilder {
       logger.info(`${outOfScope} écartées : statut non coché pour leur liste`)
     }
 
-    const pointage = skip.temps
-      ? null
-      : await this.#loadPointage(client, teamId, config, now, logger)
+    /*
+     * Tout ce qui suit ne dépend que des tâches : l'API, le disque et des flux
+     * RSS n'ont aucune raison de s'attendre. Chaque étape encaisse ses propres
+     * erreurs — une veille injoignable ne retarde ni ne fait tomber le reste.
+     */
+    const [pointage, branches, veille, claude, { comments, mentions }, exitStatuses] =
+      await Promise.all([
+        skip.temps
+          ? null
+          : timed('Pointage', () => this.#loadPointage(client, teamId, config, now, logger)),
+        timed('Branches', () => this.#loadBranches(config, tasks, logger, skip.git)),
+        timed('Veille', () =>
+          this.#loadVeille(config, now, previous?.at ?? null, logger, skip.veille)
+        ),
+        timed('Claude', () => this.#loadClaude(config, now, tasks, logger, skip.claude)),
+        timed('Commentaires', () =>
+          this.#loadComments({
+            client,
+            config,
+            tasks,
+            meUserId,
+            meName,
+            now,
+            since: previous?.at ?? null,
+            logger,
+            skip,
+          })
+        ),
+        timed('Sorties', () => this.#exitStatuses(client, previous, tasks, now, logger)),
+      ])
+
     if (pointage) {
       for (const task of tasks) task.myTimeMs = pointage.byTask[task.id] ?? 0
     }
 
-    const branches = await this.#loadBranches(config, tasks, logger, skip.git)
-    const veille = await this.#loadVeille(config, now, previous?.at ?? null, logger, skip.veille)
-    const claude = await this.#loadClaude(config, now, tasks, logger, skip.claude)
-    const { comments, mentions } = await this.#loadComments({
-      client,
-      config,
-      tasks,
-      meUserId,
-      meName,
-      now,
-      since: previous?.at ?? null,
-      logger,
-      skip,
-    })
-
-    const diff = computeDiff({
-      previous,
-      current: tasks,
-      meUserId,
-      exitStatuses: await this.#exitStatuses(client, previous, tasks, logger),
-    })
+    const diff = computeDiff({ previous, current: tasks, meUserId, exitStatuses })
 
     const blockers = computeBlockers({
       tasks,
@@ -338,6 +363,11 @@ export class ReportBuilder {
    * Un seul balayage de commentaires sert deux usages : les afficher sous les
    * cartes concernées, et y chercher ce qui me cite. Les tâches déjà lues pour
    * l'affichage ne sont pas relues pour les mentions.
+   *
+   * Le cache passe avant l'API : une tâche dont la date de modification n'a
+   * pas bougé depuis la dernière lecture n'a pas de nouveau commentaire. Ne
+   * coûtent un appel que les tâches modifiées, plus un petit lot des entrées
+   * les plus anciennes, pour rattraper ce que la date ne voit pas.
    */
   async #loadComments(options: {
     client: ClickUpClient
@@ -356,21 +386,42 @@ export class ReportBuilder {
     const fetched = new Set(forDisplay.map((task) => task.id))
     const forMentions = skip.mentions ? [] : mentionTargets(tasks, config.mentions, fetched)
 
-    const toFetch = [...forDisplay, ...forMentions]
-    if (toFetch.length) {
+    const wanted = [...forDisplay, ...forMentions]
+    const raw: Record<string, RawComment[]> = {}
+
+    if (wanted.length) {
+      const stampOf = (task: TaskView) => String(task.updated?.toMillis() ?? '')
+      const cached = await this.cache.comments(
+        wanted.map((task) => ({ id: task.id, stamp: stampOf(task) }))
+      )
+      for (const [id, entry] of cached) raw[id] = entry.comments
+
+      const horizon = now.minus({ hours: REVALIDATE_AFTER_HOURS })
+      const missing = wanted.filter((task) => !cached.has(task.id))
+      const stale = wanted
+        .filter((task) => cached.has(task.id) && cached.get(task.id)!.fetchedAt < horizon)
+        .sort(
+          (a, b) => cached.get(a.id)!.fetchedAt.toMillis() - cached.get(b.id)!.fetchedAt.toMillis()
+        )
+        .slice(0, REVALIDATE_PER_RUN)
+
+      const read: { id: string; stamp: string; comments: RawComment[] }[] = []
+      await mapWithConcurrency([...missing, ...stale], 6, async (task) => {
+        try {
+          const comments = await client.comments(task.id)
+          raw[task.id] = comments
+          read.push({ id: task.id, stamp: stampOf(task), comments })
+        } catch (error) {
+          logger.warn(`Commentaires indisponibles pour ${task.ref} : ${describe(error)}`)
+        }
+      })
+      await this.cache.rememberComments(read, now)
+
       logger.info(
-        `Commentaires : ${forDisplay.length} tâches affichées + ${forMentions.length} balayées`
+        `Commentaires : ${forDisplay.length} tâches affichées + ${forMentions.length} balayées · ` +
+          `${cached.size} en cache, ${missing.length} à lire, ${stale.length} à revérifier`
       )
     }
-
-    const raw: Record<string, RawComment[]> = {}
-    await mapWithConcurrency(toFetch, 6, async (task) => {
-      try {
-        raw[task.id] = await client.comments(task.id)
-      } catch (error) {
-        logger.warn(`Commentaires indisponibles pour ${task.ref} : ${describe(error)}`)
-      }
-    })
 
     const comments: Record<string, TaskComment[]> = {}
     for (const task of forDisplay) {
@@ -412,32 +463,54 @@ export class ReportBuilder {
   }
 
   /**
-   * Statut actuel des tâches sorties du périmètre. Plafonné : c'est un appel
-   * par tâche, et la réponse n'est qu'un agrément d'affichage.
+   * Statut actuel des tâches sorties du périmètre. C'est un appel par tâche
+   * pour un simple agrément d'affichage : le cache répond d'abord, et les
+   * lectures restantes — les inconnues, puis les plus anciennes — sont
+   * plafonnées par run. Ce qui manque aujourd'hui sera lu au prochain.
    */
   async #exitStatuses(
     client: ClickUpClient,
     previous: { tasks: TaskSnapshot[] } | null,
     current: TaskView[],
+    now: DateTime,
     logger: BuildLogger
   ): Promise<Record<string, string>> {
     if (!previous) return {}
 
     const present = new Set(current.map((task) => task.id))
-    const left = previous.tasks.filter((task) => !present.has(task.id)).slice(0, 30)
-    const statuses: Record<string, string> = {}
+    const left = previous.tasks.filter((task) => !present.has(task.id))
+    if (left.length === 0) return {}
 
-    await mapWithConcurrency(left, 6, async (snapshot) => {
+    const cached = await this.cache.exitStatuses(left.map((task) => task.id))
+    const statuses: Record<string, string> = {}
+    for (const [id, entry] of cached) statuses[id] = entry.status
+
+    const horizon = now.minus({ hours: REVALIDATE_AFTER_HOURS })
+    const ageOf = (id: string) => cached.get(id)?.fetchedAt.toMillis() ?? 0
+    const toFetch = left
+      .filter((task) => !cached.has(task.id) || cached.get(task.id)!.fetchedAt < horizon)
+      .sort((a, b) => ageOf(a.id) - ageOf(b.id))
+      .slice(0, EXIT_LOOKUPS_PER_RUN)
+
+    const fetched: { id: string; status: string }[] = []
+    await mapWithConcurrency(toFetch, 6, async (snapshot) => {
       try {
         const detail = await client.task(snapshot.id)
-        statuses[snapshot.id] = detail.status?.status ?? '?'
+        const status = detail.status?.status
+        if (!status) return
+        statuses[snapshot.id] = status
+        fetched.push({ id: snapshot.id, status })
       } catch (error) {
         if (error instanceof ClickUpError) {
           logger.debug(`Statut de sortie inconnu pour ${snapshot.ref} : ${error.message}`)
         }
       }
     })
+    await this.cache.rememberExitStatuses(fetched, now)
 
+    logger.info(
+      `Sorties : ${left.length} tâches · ${cached.size} statuts en cache, ${toFetch.length} à lire`
+    )
     return statuses
   }
 }
@@ -445,6 +518,23 @@ export class ReportBuilder {
 /** L'instantané retenu pour la comparaison du lendemain. */
 export function snapshotOf(report: Report): TaskSnapshot[] {
   return report.tasks.map(toSnapshot)
+}
+
+/**
+ * Chronomètre une étape et la journalise. Une étape qui ne pèse rien ne
+ * mérite qu'une ligne de debug : le journal doit montrer où va le temps,
+ * pas le noyer.
+ */
+function stageTimer(logger: BuildLogger) {
+  return async <T>(label: string, work: () => Promise<T>): Promise<T> => {
+    const startedAt = Date.now()
+    const result = await work()
+    const seconds = (Date.now() - startedAt) / 1000
+    const line = `${label} · ${seconds.toFixed(1)} s`
+    if (seconds >= 0.5) logger.info(line)
+    else logger.debug(line)
+    return result
+  }
 }
 
 function describe(error: unknown): string {

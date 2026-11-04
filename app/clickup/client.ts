@@ -7,6 +7,9 @@ import type { RawTimeEntry } from '#domain/rules/pointage'
 
 const API_BASE = 'https://api.clickup.com/api/v2'
 
+/** Pages de tâches demandées d'un coup. Une page en fait cent. */
+const PAGES_PER_ROUND = 3
+
 export interface ClickUpClientOptions {
   token: string
   maxPerMinute?: number
@@ -197,35 +200,45 @@ export class ClickUpClient {
    * la même pagination qu'une seule. C'est ce qui permet de n'interroger que
    * ce qui est coché, plutôt que des espaces entiers dont on jetterait
    * ensuite les neuf dixièmes.
+   *
+   * Les pages partent par salves : une page coûte une à quatre secondes, et
+   * la n-ième n'a pas besoin d'attendre la précédente. Trois cents tâches
+   * tiennent dans une salve ; au pire, deux pages vides sont demandées pour
+   * rien — deux appels, contre plusieurs secondes gagnées.
    */
   async teamTasks(teamId: string, listIds: string[], statuses: string[]): Promise<RawTask[]> {
     if (listIds.length === 0 || statuses.length === 0) return []
+
+    const fetchPage = (page: number) =>
+      this.get<TaskPage>(`/team/${teamId}/task`, {
+        list_ids: listIds,
+        statuses,
+        subtasks: true,
+        include_closed: true,
+        order_by: 'updated',
+        page,
+      })
+
     const tasks: RawTask[] = []
 
-    for (let page = 0; page <= 50; page++) {
-      const data = await this.get<{ tasks?: RawTask[]; last_page?: boolean }>(
-        `/team/${teamId}/task`,
-        {
-          list_ids: listIds,
-          statuses,
-          subtasks: true,
-          include_closed: true,
-          order_by: 'updated',
-          page,
-        }
-      )
-
+    /** Range la page et dit si c'était la dernière. */
+    const take = (page: number, data: TaskPage): boolean => {
       const batch = data.tasks ?? []
       tasks.push(...batch)
       this.#logger.debug(`page ${page} : ${batch.length} tâches`)
+      return data.last_page !== false || batch.length === 0
+    }
 
-      if (data.last_page !== false || batch.length === 0) return tasks
-
-      if (page === 50) {
-        this.#logger.warn('Pagination interrompue à 50 pages')
+    for (let page = 0; page <= 50; page += PAGES_PER_ROUND) {
+      const round = await Promise.all(
+        Array.from({ length: PAGES_PER_ROUND }, (_, offset) => fetchPage(page + offset))
+      )
+      for (const [offset, data] of round.entries()) {
+        if (take(page + offset, data)) return tasks
       }
     }
 
+    this.#logger.warn('Pagination interrompue à 50 pages')
     return tasks
   }
 
@@ -246,6 +259,11 @@ export class ClickUpClient {
     })
     return data.data ?? []
   }
+}
+
+interface TaskPage {
+  tasks?: RawTask[]
+  last_page?: boolean
 }
 
 interface RawList {
