@@ -34,9 +34,55 @@ test.group('Colonnes — proposition sur un workspace inconnu', () => {
   })
 
   test('ne propose rien pour un état hors workflow', ({ assert }) => {
-    for (const status of ['production', 'cloturé', 'pause', 'annulé', 'Closed']) {
+    for (const status of ['cloturé', 'annulé', 'Closed', 'archivé', 'Bloqué par le client']) {
       assert.isNull(proposed(status), `${status} ne devrait rien attraper`)
     }
+  })
+})
+
+/*
+| Les statuts d'un workspace réel, tels que ClickUp les remonte. Chacun doit
+| trouver son étape : un statut rangé dans « Autres » n'entre dans aucune
+| règle, et c'est précisément ce qu'on ne veut pas pour un état du workflow.
+*/
+test.group('Colonnes — chaque statut du workspace trouve son étape', () => {
+  test('les attentes se distinguent : direction/PO avant le dev, client après la recette', ({
+    assert,
+  }) => {
+    assert.equal(proposed('en attente direction/po'), 'attente_po')
+    assert.equal(proposed('en attente  retour client'), 'attente_client')
+    assert.equal(proposed('à tester par client'), 'recette')
+  })
+
+  test('une pause a son étape', ({ assert }) => {
+    assert.equal(proposed('pause'), 'pause')
+    assert.equal(proposed('On Hold'), 'pause')
+  })
+
+  test('un rejet, de revue ou de tests, revient à corriger', ({ assert }) => {
+    /* « revue rejetée » contient « revue » : c'est le fragment le plus long qui parle. */
+    assert.equal(proposed('revue rejetée'), 'a_corriger')
+    assert.equal(proposed('tests cicd rejetés'), 'a_corriger')
+    assert.equal(proposed('tests client rejetés'), 'a_corriger')
+    assert.equal(proposed('rejeté cicd'), 'a_corriger')
+    assert.equal(proposed('Changes requested'), 'a_corriger')
+  })
+
+  test('la validation client et la production sont des étapes', ({ assert }) => {
+    assert.equal(proposed('tests client validé'), 'valide_client')
+    assert.equal(proposed('production'), 'production')
+    assert.equal(proposed('Released'), 'production')
+  })
+
+  test('« à valider » reste une recette, « préprod » aussi', ({ assert }) => {
+    assert.equal(proposed('à valider'), 'recette')
+    assert.equal(proposed('pre-prod'), 'recette')
+    assert.equal(proposed('preprod'), 'recette')
+  })
+
+  test('les tests internes restent en recette', ({ assert }) => {
+    assert.equal(proposed('à tester formateur cicd'), 'recette')
+    assert.equal(proposed('deployé sur recette'), 'recette')
   })
 })
 

@@ -10,6 +10,7 @@ import {
   UserPlus,
   WarningOctagon,
 } from '@phosphor-icons/react'
+import { useState } from 'react'
 import { Card } from '@/components/card'
 import { WeekCard } from '@/components/week_card'
 import { dressReason } from '@/lib/reasons'
@@ -327,7 +328,17 @@ function UnblockCard({
   )
 }
 
-/** Où j'en suis : mes tâches par colonne, puis ce qui attend ma relecture. */
+/*
+| Les étapes que le focus retient : ce qui m'attend et ce que j'ai en main.
+|
+| Une tâche en revue, en recette ou chez le client n'est plus entre mes mains :
+| elle encombrerait la carte sans rien demander ce matin. Les clés sont citées
+| en dur, comme dans les règles de blocage — c'est la place dans le workflow
+| qui compte, pas le libellé.
+*/
+const FOCUS_COLUMNS = ['nouveau', 'a_faire', 'dev_en_cours']
+
+/** Où j'en suis : mes tâches à prendre ou en cours, puis ce qui attend ma relecture. */
 function FocusCard({
   columns,
   mine,
@@ -340,6 +351,7 @@ function FocusCard({
   onOpenTask: (id: string) => void
 }) {
   const groups = columns
+    .filter((column) => FOCUS_COLUMNS.includes(column.key))
     .map((column) => ({ column, tasks: mine.filter((task) => task.column === column.key) }))
     .filter((group) => group.tasks.length > 0)
 
@@ -348,12 +360,12 @@ function FocusCard({
       rail="var(--color-accent)"
       mark={Crosshair}
       kicker="Focus du jour"
-      note="Mes tâches, rangées par étape du workflow"
+      note="Mes tâches nouvelles, à faire et en cours"
       className="gap-4"
     >
       {groups.length === 0 && (
         <p className="m-0" style={{ font: '500 13.5px var(--font-body)', color: 'var(--muted)' }}>
-          Aucune tâche à mon nom dans ce périmètre.
+          Rien de nouveau, à faire ou en cours à mon nom dans ce périmètre.
         </p>
       )}
 
@@ -434,29 +446,29 @@ function TitleLine({
   )
 }
 
+type ChangeKey = 'status' | 'entered' | 'left' | 'assigned'
+
 type ChangeGroup = {
+  key: ChangeKey
   label: string
   icon: Icon
   color: string
   items: { key: string; ref: string; name: string; from?: string; to?: string }[]
 }
 
-/** Ce qui a bougé depuis le rapport de référence. */
+/**
+ * Ce qui a bougé depuis le rapport de référence.
+ *
+ * Une seule catégorie à la fois : le sélecteur en tête choisit laquelle, les
+ * changements de statut par défaut. Les autres gardent leur compte dans le
+ * menu, pour qu'on sache où aller voir sans allonger la carte.
+ */
 function ChangesCard({ report, scoped }: { report: Report; scoped: FilteredReport }) {
+  const [chosen, setChosen] = useState<ChangeKey>('status')
+
   const groups: ChangeGroup[] = [
     {
-      label: 'M’ont été assignées',
-      icon: UserPlus,
-      color: 'var(--color-accent)',
-      items: scoped.diff.assignedToMe.map(plain),
-    },
-    {
-      label: 'Entrées dans le périmètre',
-      icon: SignIn,
-      color: 'var(--green)',
-      items: scoped.diff.entered.map(plain),
-    },
-    {
+      key: 'status',
       label: 'Changements de statut',
       icon: GitDiff,
       color: 'var(--amber)',
@@ -469,6 +481,14 @@ function ChangesCard({ report, scoped }: { report: Report; scoped: FilteredRepor
       })),
     },
     {
+      key: 'entered',
+      label: 'Entrées dans le périmètre',
+      icon: SignIn,
+      color: 'var(--green)',
+      items: scoped.diff.entered.map(plain),
+    },
+    {
+      key: 'left',
       label: 'Sorties',
       icon: SignOut,
       color: 'var(--faint)',
@@ -480,7 +500,17 @@ function ChangesCard({ report, scoped }: { report: Report; scoped: FilteredRepor
         to: exit.newStatus,
       })),
     },
-  ].filter((group) => group.items.length > 0)
+    {
+      key: 'assigned',
+      label: 'M’ont été assignées',
+      icon: UserPlus,
+      color: 'var(--color-accent)',
+      items: scoped.diff.assignedToMe.map(plain),
+    },
+  ]
+  const moved = groups.some((group) => group.items.length > 0)
+  const group = groups.find((entry) => entry.key === chosen) ?? groups[0]
+  const Glyph = group.icon
 
   return (
     <Card
@@ -494,52 +524,64 @@ function ChangesCard({ report, scoped }: { report: Report; scoped: FilteredRepor
       }
       className="gap-4"
     >
-      {groups.length === 0 && (
+      {!moved ? (
         <p className="m-0" style={{ font: '500 13.5px var(--font-body)', color: 'var(--muted)' }}>
           {scoped.diff.since
             ? 'Rien n’a bougé depuis le rapport précédent.'
             : 'Premier rapport : rien à comparer.'}
         </p>
-      )}
-
-      {groups.map((group) => {
-        const Glyph = group.icon
-
-        return (
-          <div key={group.label} className="flex flex-col gap-[6px]">
-            <div
-              className="flex items-center gap-[7px]"
-              style={{ font: '600 12px var(--font-body)', color: 'var(--muted)' }}
+      ) : (
+        <>
+          <label className="flex items-center gap-2">
+            <Glyph size={13} color={group.color} className="shrink-0" />
+            <select
+              className="input"
+              aria-label="Catégorie de changements"
+              style={{ width: 'auto', minHeight: 32, fontSize: 12.5 }}
+              value={chosen}
+              onChange={(event) => setChosen(event.target.value as ChangeKey)}
             >
-              <Glyph size={13} color={group.color} />
-              {group.label}
-              <span className="num" style={{ fontFamily: 'var(--mono)', color: 'var(--faint)' }}>
-                {group.items.length}
-              </span>
+              {groups.map((entry) => (
+                <option key={entry.key} value={entry.key}>
+                  {entry.label} · {entry.items.length}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {group.items.length === 0 ? (
+            <p
+              className="m-0"
+              style={{ font: '500 13.5px var(--font-body)', color: 'var(--muted)' }}
+            >
+              Rien dans « {group.label} » depuis le rapport précédent.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-[6px]">
+              {group.items.map((item) => (
+                <div
+                  key={item.key}
+                  className="flex flex-wrap items-baseline gap-x-2 gap-y-[2px] pl-5"
+                  style={{ font: '500 13.5px/1.35 var(--font-body)' }}
+                >
+                  <span style={REF}>{item.ref}</span>
+                  <span>{item.name}</span>
+                  {item.from && (
+                    <span
+                      className="inline-flex items-center gap-[5px]"
+                      style={{ fontSize: 12, color: 'var(--muted)' }}
+                    >
+                      {item.from}
+                      <ArrowRight size={11} />
+                      <span style={{ color: 'var(--color-text)' }}>{item.to}</span>
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
-            {group.items.map((item) => (
-              <div
-                key={item.key}
-                className="flex flex-wrap items-baseline gap-x-2 gap-y-[2px] pl-5"
-                style={{ font: '500 13.5px/1.35 var(--font-body)' }}
-              >
-                <span style={REF}>{item.ref}</span>
-                <span>{item.name}</span>
-                {item.from && (
-                  <span
-                    className="inline-flex items-center gap-[5px]"
-                    style={{ fontSize: 12, color: 'var(--muted)' }}
-                  >
-                    {item.from}
-                    <ArrowRight size={11} />
-                    <span style={{ color: 'var(--color-text)' }}>{item.to}</span>
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        )
-      })}
+          )}
+        </>
+      )}
 
       {/* Le rapport sait combien de tâches il a écartées : autant le dire ici. */}
       <div style={{ font: '500 11.5px var(--font-body)', color: 'var(--faint)' }}>

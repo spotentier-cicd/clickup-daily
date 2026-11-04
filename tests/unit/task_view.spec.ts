@@ -48,13 +48,13 @@ function byRef(ref: string): TaskView {
 }
 
 test.group('toTaskView', () => {
-  test('range dans « Autres » un statut que le workflow ne connaît pas', ({ assert }) => {
-    /* ROC-1650 est en « production », qui n'est repris par aucune colonne. */
+  test('rattache un statut de fin de workflow à son étape', ({ assert }) => {
+    /* ROC-1650 est en « production » : une étape du workflow, pas un rebut. */
     const task = viewsOf('ROC').find((v) => v.ref === 'ROC-1650')!
 
-    assert.exists(task, 'la tâche n’est plus écartée, elle est rangée à part')
-    assert.equal(task.column, 'autres')
-    assert.equal(task.columnLabel, 'Autres')
+    assert.exists(task, 'la tâche n’est pas écartée')
+    assert.equal(task.column, 'production')
+    assert.equal(task.columnLabel, 'Production')
   })
 
   test('porte l’identité de sa liste', ({ assert }) => {
