@@ -108,6 +108,7 @@ test.group('Tableau personnel — ce qui entre en base', () => {
     assert.equal(sanitizeCardInput({ column: 'terminé' }).column, 'todo')
     assert.equal(toKanbanColumn(undefined), 'todo')
     assert.equal(toKanbanColumn('blocked'), 'blocked')
+    assert.equal(toKanbanColumn('to_review'), 'to_review')
   })
 
   test('seul un lien http tient lieu de lien', ({ assert }) => {

@@ -1,10 +1,10 @@
 /*
 | LE TABLEAU PERSONNEL.
 |
-| Les états d'une journée de dev — à faire, en cours, bloqué, à déployer, à
-| tester — et ce qu'on a besoin d'avoir sous les yeux pour reprendre une
-| tâche : le ticket, la branche front, la branche back, et la phrase qu'on se
-| laisse à soi-même.
+| Les états d'une journée de dev — à faire, en cours, bloqué, en attente de
+| revue, à déployer, à tester — et ce qu'on a besoin d'avoir sous les yeux
+| pour reprendre une tâche : le ticket, la branche front, la branche back, et
+| la phrase qu'on se laisse à soi-même.
 |
 | Rien ici ne vient de ClickUp. Une carte PEUT citer un ticket, et le tableau
 | sait alors ouvrir sa fiche, mais elle ne lui appartient pas : le ticket passe
@@ -21,6 +21,7 @@ export const KANBAN_COLUMNS = [
   { key: 'todo', label: 'À faire', color: 'var(--env-1)' },
   { key: 'doing', label: 'En cours', color: 'var(--amber)' },
   { key: 'blocked', label: 'Bloqué', color: 'var(--red)' },
+  { key: 'to_review', label: 'En attente revue', color: 'var(--env-4)' },
   { key: 'to_deploy', label: 'À déployer', color: 'var(--green)' },
   { key: 'to_test', label: 'À tester', color: 'var(--env-2)' },
 ] as const

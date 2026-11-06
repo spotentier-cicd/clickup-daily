@@ -23,10 +23,11 @@ import type { Report, Task } from '@/lib/report'
 |
 | Les colonnes du workflow, et la seule partie de l'application qu'on remplit
 | soi-même : ce qu'on a à faire, ce qu'on a ouvert, ce qui attend quelqu'un
-| d'autre, ce qui attend sa mise en production, ce qui est à recetter. Une
-| carte porte ce qu'il faut pour reprendre le travail là où on l'a laissé — le
-| ticket, les deux branches, et la phrase qu'on se laisse à soi-même — parce
-| que c'est précisément ce qu'on perd entre le vendredi soir et le lundi matin.
+| d'autre, ce qui attend sa relecture, ce qui attend sa mise en production,
+| ce qui est à recetter. Une carte porte ce qu'il faut pour reprendre le
+| travail là où on l'a laissé — le ticket, les deux branches, et la phrase
+| qu'on se laisse à soi-même — parce que c'est précisément ce qu'on perd
+| entre le vendredi soir et le lundi matin.
 |
 | Le ticket n'est pas obligatoire : on note « relancer l'infra » avant qu'un
 | ticket existe. Mais quand il y en a un, la carte sait ouvrir sa fiche, et le
@@ -86,7 +87,7 @@ export function KanbanBoard({ cards, report, tasks, search, onOpenTask }: Kanban
   }
 
   return (
-    <div className="grid grid-cols-1 items-start gap-[18px] md:grid-cols-3 xl:grid-cols-5">
+    <div className="grid grid-cols-1 items-start gap-[18px] md:grid-cols-3 xl:grid-cols-6">
       {KANBAN_COLUMNS.map((column) => {
         const list = cardsOfColumn(shown, column.key).filter((card) => matchesCard(card, search))
         const total = cardsOfColumn(board.cards, column.key).length

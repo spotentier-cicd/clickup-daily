@@ -243,9 +243,9 @@ explicite, pas le rapport du matin.
 
 ## Mon tableau
 
-L'onglet **Mon tableau** est un kanban à cinq colonnes — *à faire*, *en
-cours*, *bloqué*, *à déployer*, *à tester* — et c'est la seule partie de
-l'application qu'on remplit soi-même. Rien n'en repart vers ClickUp : c'est un bloc-notes de poste de
+L'onglet **Mon tableau** est un kanban à six colonnes — *à faire*, *en
+cours*, *bloqué*, *en attente revue*, *à déployer*, *à tester* — et c'est la
+seule partie de l'application qu'on remplit soi-même. Rien n'en repart vers ClickUp : c'est un bloc-notes de poste de
 travail, gardé dans la même base SQLite que les rapports.
 
 Une carte porte ce qu'il faut pour reprendre une tâche là où on l'a laissée :
